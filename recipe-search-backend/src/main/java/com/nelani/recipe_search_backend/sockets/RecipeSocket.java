@@ -19,7 +19,7 @@ public class RecipeSocket {
 
     public void sendAiResults (List<Recipe> recipes, String searchTerm) {
         List<RecipeDto> formattedRecipes = recipes.stream()
-                .map(RecipeMapper::mapRecipe)
+                .map(RecipeMapper::mapRecipeWithMinimalDetails)
                 .toList();
         messagingTemplate.convertAndSend("/topic/recipes/" + searchTerm, formattedRecipes);
     }

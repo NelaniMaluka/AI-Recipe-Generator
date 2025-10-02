@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nelani.recipe_search_backend.dto.IngredientDto;
 import com.nelani.recipe_search_backend.dto.RecipeDto;
 import com.nelani.recipe_search_backend.dto.StepDto;
+import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.service.RecipeService;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -29,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = RecipeController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 public class RecipeControllerTest {
 
     @Autowired
@@ -44,15 +47,12 @@ public class RecipeControllerTest {
 
     @BeforeEach
     public void init() {
-        List<IngredientDto> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
-        List<StepDto> stepsList = List.of(createStep("description", 10));
-
-        recipeList = new ArrayList<>();  // <-- initialize here
-        recipeList.add(createRecipe("recipe0", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("recipe1", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("recipe2", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("recipe3", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("recipe4", "imgUrl", 10, ingredientsList, stepsList));
+        recipeList = new ArrayList<>();
+        recipeList.add(createRecipe("publicId","recipe0", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId1","recipe1", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId2","recipe2", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId3","recipe3", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId4","recipe4", "imgUrl", 10));
     }
 
     @Test
@@ -73,9 +73,7 @@ public class RecipeControllerTest {
         response.andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(jsonPath("$.length()", CoreMatchers.is(recipeList.size())))
                 .andExpect(jsonPath("$[0].name").value("recipe0"))
-                .andExpect(jsonPath("$[0].ingredients.length()").value(1))
-                .andExpect(jsonPath("$[1].name").value("recipe1"))
-                .andExpect(jsonPath("$[1].ingredients.length()").value(1));
+                .andExpect(jsonPath("$[1].name").value("recipe1"));
     }
 
     @Test
@@ -95,27 +93,13 @@ public class RecipeControllerTest {
                 .andExpect(jsonPath("$.length()", CoreMatchers.is(0)));
     }
 
-    private IngredientDto createIngredient(String name, String quantity) {
-        return IngredientDto.builder()
-                .name(name)
-                .quantity(quantity)
-                .build();
-    }
-
-    private StepDto createStep(String description, int minutes) {
-        return StepDto.builder()
-                .description(description)
-                .estimatedMinutes(minutes)
-                .build();
-    }
-
-    private RecipeDto createRecipe(String name, String imgUrl, int cookTimeMinutes, List<IngredientDto> ingredients, List<StepDto> steps) {
+    private RecipeDto createRecipe(String publicId, String name, String imgUrl, int cookTimeMinutes) {
         return RecipeDto.builder()
+                .publicId(publicId)
                 .name(name)
                 .imageUrl(imgUrl)
+                .mealType(MealType.APPETIZER)
                 .cookTimeMinutes(cookTimeMinutes)
-                .ingredients(ingredients)
-                .steps(steps)
                 .build();
     }
 }

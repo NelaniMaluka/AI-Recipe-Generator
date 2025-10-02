@@ -23,5 +23,9 @@ public class Step {
 
     @Column(nullable = false, columnDefinition = "INT")
     private int estimatedMinutes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipe_id")
+    private Recipe recipe;
 }
 

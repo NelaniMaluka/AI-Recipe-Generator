@@ -1,5 +1,7 @@
 package com.nelani.recipe_search_backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.nelani.recipe_search_backend.model.MealType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,10 +13,12 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RecipeDto {
-    private Long id;
+    private String publicId;
     private String name;
     private String imageUrl;
+    private MealType mealType;
     private Integer cookTimeMinutes;
 
     private List<IngredientDto> ingredients;

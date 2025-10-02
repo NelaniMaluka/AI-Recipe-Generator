@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -21,13 +22,20 @@ public class Recipe {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
+    private String publicId;
+
     @Column(nullable = false, columnDefinition = "VARCHAR(255)")
     @NotBlank(message = "Recipe name cannot be blank")
     private String name;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 500)
     @NotBlank(message = "Image URL cannot be blank")
     private String imageUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private MealType mealType;
 
     @Column(nullable = false)
     private Integer cookTimeMinutes;
@@ -43,4 +51,18 @@ public class Recipe {
     @NotEmpty(message = "Recipe must have at least one step")
     @Valid
     private List<Step> steps;
+
+    @PrePersist
+    public void generatePublicId() {
+        if (this.publicId == null || this.publicId.isBlank()) {
+            String slug = name
+                    .toLowerCase()
+                    .replaceAll("[^a-z0-9\\s-]", "")
+                    .replaceAll("\\s+", "-");
+            String suffix = UUID.randomUUID()
+                    .toString()
+                    .substring(0, 6);
+            this.publicId = slug + "-" + suffix;
+        }
+    }
 }

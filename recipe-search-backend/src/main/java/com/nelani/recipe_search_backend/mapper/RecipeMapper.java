@@ -11,7 +11,17 @@ import java.util.List;
 
 public class RecipeMapper {
 
-    public static RecipeDto mapRecipe(Recipe recipe) {
+    public static RecipeDto mapRecipeWithMinimalDetails(Recipe recipe) {
+        return RecipeDto.builder()
+                .publicId(recipe.getPublicId())
+                .name(recipe.getName())
+                .imageUrl(recipe.getImageUrl())
+                .mealType(recipe.getMealType())
+                .cookTimeMinutes(recipe.getCookTimeMinutes())
+                .build();
+    }
+
+    public static RecipeDto mapRecipeWithAllDetails(Recipe recipe) {
         List<IngredientDto> ingredientDtos = recipe.getIngredients().stream()
                 .map(RecipeMapper::mapIngredient)
                 .toList();
@@ -20,9 +30,10 @@ public class RecipeMapper {
                 .toList();
 
         return RecipeDto.builder()
-                .id(recipe.getId())
+                .publicId(recipe.getPublicId())
                 .name(recipe.getName())
                 .imageUrl(recipe.getImageUrl())
+                .mealType(recipe.getMealType())
                 .cookTimeMinutes(recipe.getCookTimeMinutes())
                 .ingredients(ingredientDtos)
                 .steps(stepDtos)
@@ -31,7 +42,6 @@ public class RecipeMapper {
 
     private static IngredientDto mapIngredient(Ingredient ingredient) {
         return IngredientDto.builder()
-                .id(ingredient.getId())
                 .name(ingredient.getName())
                 .quantity(ingredient.getQuantity())
                 .build();
@@ -39,7 +49,6 @@ public class RecipeMapper {
 
     private static StepDto mapStep(Step step) {
         return StepDto.builder()
-                .id(step.getId())
                 .description(step.getDescription())
                 .estimatedMinutes(step.getEstimatedMinutes())
                 .build();

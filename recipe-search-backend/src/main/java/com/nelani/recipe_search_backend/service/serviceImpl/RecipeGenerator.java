@@ -17,8 +17,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,20 +55,24 @@ public class RecipeGenerator {
             return;
         }
 
+        List<Recipe> savedRecipes = new ArrayList<>();
         // Try saving each recipe individually
         recipes.forEach(recipe -> {
             try {
                 // Attempt to insert recipe into DB
-                boolean exists = recipeRepository.existsByNameAndIngredientsAndSteps(recipe.getName(),
-                        recipe.getIngredients(), recipe.getSteps());
+                boolean exists = recipeRepository.existsByName(recipe.getName());
+
                 if (!exists) {
-                    recipeRepository.save(recipe);
+                    saveRecipe(recipe);
+                    savedRecipes.add(recipe);
                 }
             } catch (DataIntegrityViolationException e) {
                 // Skip duplicates (unique constraints like recipe name, etc.)
                 log.debug("Recipe '{}' already exists, skipping.", recipe.getName());
             }
         });
+
+        recipeSocket.sendAiResults(savedRecipes, searchWord);
 
         // Log success with count of how many recipes were processed
         log.info("Successfully processed {} recipes for '{}'", recipes.size(), searchWord);
@@ -79,71 +86,67 @@ public class RecipeGenerator {
      * @return List of Recipe objects
      */
     public List<Recipe> fetchRecipesFromAi(String searchWord) {
-        // Hugging Face chat endpoint
         String url = "https://router.huggingface.co/v1/chat/completions";
-
-        // Spring RestTemplate to make HTTP requests
         RestTemplate restTemplate = new RestTemplate();
 
-        // Set HTTP headers
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + huggingfaceApiKey); // Bearer token for authentication
-        headers.setContentType(MediaType.APPLICATION_JSON); // Set content type to JSON
+        headers.set("Authorization", "Bearer " + huggingfaceApiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // JSON prompt to generate 5 recipes in a structured format
         String inputJson = """
-                {
-                  "model": "deepseek-ai/DeepSeek-V3.1-Terminus:novita",
-                  "messages": [
-                    {"role": "user", "content": "Generate 5 cooking recipes about %s in JSON format. The response should be a JSON array of objects with this structure {\\\"name\\\": string, \\\"cookTimeMinutes\\\": integer, \\\"ingredients\\\": [{\\\"name\\\": string, \\\"quantity\\\": string}], \\\"steps\\\": [{\\\"description\\\": string, \\\"estimatedMinutes\\\": int}]}."}
-                  ]
-                }
-                """
-                .formatted(searchWord); // Inject searchWord into prompt
+                    {
+                      "model": "deepseek-ai/DeepSeek-V3.1-Terminus:novita",
+                      "messages": [
+                        {
+                          "role": "user",
+                          "content": "Generate 5 cooking recipes about %s in JSON format. \
+                The response should be a JSON array of objects with this structure: {\\\"name\\\": string, \
+                \\\"cookTimeMinutes\\\": integer, \
+                \\\"ingredients\\\": [{\\\"name\\\": string, \\\"quantity\\\": string}], \
+                \\\"steps\\\": [{\\\"description\\\": string, \\\"estimatedMinutes\\\": int}], \
+                \\\"mealType\\\": one of [BREAKFAST, BRUNCH, LUNCH, DINNER, SNACK, APPETIZER, MAIN_COURSE, SIDE_DISH, SALAD, SOUP, DESSERT, BEVERAGE]}."
+                        }
+                      ]
+                    }
+                    """
+                .formatted(searchWord);
 
-        // Wrap the JSON prompt and headers into an HttpEntity for the POST request
         HttpEntity<String> entity = new HttpEntity<>(inputJson, headers);
 
         try {
-            // Make the POST request to Hugging Face API
             ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-
-            // Raw response from the model
             String responseJson = response.getBody();
-
-            // Jackson ObjectMapper to parse JSON
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(responseJson);
 
-            // Extract the model's output text from the response structure
-            String jsonString = root.get("choices")
+            String rawContent = root.get("choices")
                     .get(0)
                     .get("message")
                     .get("content")
                     .asText();
 
-            // Clean any code block formatting or backticks (common in chat models)
-            jsonString = jsonString.strip()
-                    .replaceAll("(?s)^```.*?\\n", "") // remove starting ``` if present
-                    .replaceAll("(?s)```$", ""); // remove ending ``` if present
+            // Remove code fences and extra text
+            rawContent = rawContent.strip()
+                    .replaceAll("(?s)^```.*?\\n", "")
+                    .replaceAll("(?s)```$", "");
 
-            // Parse cleaned JSON string into List<Recipe>
-            List<Recipe> recipes = mapper.readValue(jsonString, new TypeReference<List<Recipe>>() {
+            // Extract the JSON array inside the response
+            int start = rawContent.indexOf("[");
+            int end = rawContent.lastIndexOf("]");
+            if (start == -1 || end == -1 || end <= start) {
+                log.warn("No JSON array found in Hugging Face response for '{}'", searchWord);
+                recipeSocket.sendAiResults(Collections.emptyList(), searchWord);
+                return Collections.emptyList();
+            }
+            String jsonArray = rawContent.substring(start, end + 1);
+
+            List<Recipe> recipes = mapper.readValue(jsonArray, new TypeReference<List<Recipe>>() {
             });
-
-            // imageUrl is assigned here before saving
-            recipes.forEach(recipe -> {
-                String imgUrl = recipeImageGenerator(recipe.getName());
-                recipe.setImageUrl(imgUrl);
-            });
-
-            recipeSocket.sendAiResults(recipes, searchWord);
-
+            recipes.forEach(recipe -> recipe.setImageUrl(recipeImageGenerator(recipe.getName())));
             return recipes;
+
         } catch (Exception e) {
             log.error("Failed to generate recipes for '{}'", searchWord, e);
-
-            // notify client that AI generation failed
             recipeSocket.sendAiResults(Collections.emptyList(), searchWord);
             return Collections.emptyList();
         }
@@ -178,6 +181,11 @@ public class RecipeGenerator {
             System.err.println("Error fetching image for " + recipeName + ": " + e.getMessage());
             return "https://via.placeholder.com/600x400.png?text=" + recipeName;
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveRecipe(Recipe recipe) {
+        recipeRepository.save(recipe);
     }
 
 }

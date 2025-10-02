@@ -24,5 +24,9 @@ public class Ingredient {
     @Column(nullable = false, columnDefinition = "VARCHAR(100)")
     @NotBlank(message = "Quantity cannot be blank")
     private String quantity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipe_id")
+    private Recipe recipe;
 }
 

@@ -3,6 +3,7 @@ package com.nelani.recipe_search_backend.service.serviceImpl;
 import com.nelani.recipe_search_backend.dto.RecipeDto;
 import com.nelani.recipe_search_backend.mapper.RecipeMapper;
 import com.nelani.recipe_search_backend.model.Recipe;
+import com.nelani.recipe_search_backend.notifications.EmailService;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
 import com.nelani.recipe_search_backend.service.RecipeService;
 
@@ -18,10 +19,23 @@ public class RecipeServiceImpl implements RecipeService {
 
     private final RecipeGenerator recipeGenerator;
     private final RecipeRepository recipeRepository;
+    private final EmailService emailService;
 
-    public RecipeServiceImpl(RecipeGenerator recipeGenerator, RecipeRepository recipeRepository) {
+    public RecipeServiceImpl(RecipeGenerator recipeGenerator, RecipeRepository recipeRepository, EmailService emailService) {
         this.recipeGenerator = recipeGenerator;
         this.recipeRepository = recipeRepository;
+        this.emailService = emailService;
+    }
+
+    @Override
+    @Cacheable(value = "recipe", key = "#publicId")
+    public RecipeDto getRecipe(String publicId) {
+        // Fetch the Recipe
+        Recipe recipe = recipeRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
+
+        // Return a RecipeDto to the user
+        return RecipeMapper.mapRecipeWithAllDetails(recipe);
     }
 
     @Override
@@ -31,7 +45,7 @@ public class RecipeServiceImpl implements RecipeService {
         Pageable pageable = PageRequest.of(page, size);
         List<Recipe> fallbackRecipes = recipeRepository.searchRecipes(searchWord, pageable);
         List<RecipeDto> fallbackRecipesDto = fallbackRecipes.stream()
-                .map(RecipeMapper::mapRecipe)
+                .map(RecipeMapper::mapRecipeWithMinimalDetails)
                         .toList();
 
         // Trigger async AI generation for DB population
@@ -39,6 +53,16 @@ public class RecipeServiceImpl implements RecipeService {
 
         //  ️Return fallback instantly
         return fallbackRecipesDto;
+    }
+
+    @Override
+    public void emailRecipe(String email, String publicId) {
+        // Fetch the Recipe
+        recipeRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
+
+        // Email the recipe to the provided email
+        emailService.prepareAndSendEmail(email, publicId);
     }
 
 }

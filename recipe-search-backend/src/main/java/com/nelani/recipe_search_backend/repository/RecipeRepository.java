@@ -10,9 +10,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
+
+    Optional<Recipe> findByPublicId(String publicId);
 
     @Query("SELECT DISTINCT r FROM Recipe r " +
             "LEFT JOIN FETCH r.ingredients i " +
@@ -20,6 +23,6 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
             "OR LOWER(i.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<Recipe> searchRecipes(@Param("searchTerm") String searchTerm, Pageable pageable);
 
-    boolean existsByNameAndIngredientsAndSteps(String name, List<Ingredient> ingredients, List<Step> steps);
+    boolean existsByName(String name);
 
 }
