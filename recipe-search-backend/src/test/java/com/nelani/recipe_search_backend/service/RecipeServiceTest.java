@@ -1,8 +1,6 @@
 package com.nelani.recipe_search_backend.service;
 
-import com.nelani.recipe_search_backend.dto.IngredientDto;
 import com.nelani.recipe_search_backend.dto.RecipeDto;
-import com.nelani.recipe_search_backend.dto.StepDto;
 import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.model.Recipe;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
@@ -44,11 +42,11 @@ public class RecipeServiceTest {
     @BeforeEach
     public void init() {
         recipeList = new ArrayList<>();
-        recipeList.add(createRecipe("publicId","recipe0", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId1","recipe1", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId2","recipe2", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId3","recipe3", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId4","recipe4", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId", "recipe0", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId1", "recipe1", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId2", "recipe2", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId3", "recipe3", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId4", "recipe4", "imgUrl", 10));
     }
 
     @Test

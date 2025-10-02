@@ -1,9 +1,6 @@
 package com.nelani.recipe_search_backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nelani.recipe_search_backend.dto.IngredientDto;
 import com.nelani.recipe_search_backend.dto.RecipeDto;
-import com.nelani.recipe_search_backend.dto.StepDto;
 import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.service.RecipeService;
 import org.hamcrest.CoreMatchers;
@@ -37,9 +34,6 @@ public class RecipeControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockitoBean
     private RecipeService recipeService;
 
@@ -48,11 +42,11 @@ public class RecipeControllerTest {
     @BeforeEach
     public void init() {
         recipeList = new ArrayList<>();
-        recipeList.add(createRecipe("publicId","recipe0", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId1","recipe1", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId2","recipe2", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId3","recipe3", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId4","recipe4", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId", "recipe0", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId1", "recipe1", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId2", "recipe2", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId3", "recipe3", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId4", "recipe4", "imgUrl", 10));
     }
 
     @Test
@@ -66,8 +60,7 @@ public class RecipeControllerTest {
                         .param("searchWord", "recipe")
                         .param("page", "0")
                         .param("size", "5")
-                        .contentType(MediaType.APPLICATION_JSON)
-        );
+                        .contentType(MediaType.APPLICATION_JSON));
 
         // Assert
         response.andExpect(MockMvcResultMatchers.status().isOk())
@@ -84,8 +77,7 @@ public class RecipeControllerTest {
                         .param("searchWord", "recipe")
                         .param("page", "0")
                         .param("size", "5")
-                        .contentType(MediaType.APPLICATION_JSON)
-        );
+                        .contentType(MediaType.APPLICATION_JSON));
 
         // Assert
         response.andExpect(MockMvcResultMatchers.status().isOk())
@@ -103,4 +95,3 @@ public class RecipeControllerTest {
                 .build();
     }
 }
-

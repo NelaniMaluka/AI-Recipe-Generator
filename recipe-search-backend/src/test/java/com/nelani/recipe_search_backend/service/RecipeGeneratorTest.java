@@ -1,9 +1,7 @@
 package com.nelani.recipe_search_backend.service;
 
-import com.nelani.recipe_search_backend.model.Ingredient;
 import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.model.Recipe;
-import com.nelani.recipe_search_backend.model.Step;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
 import com.nelani.recipe_search_backend.service.serviceImpl.RecipeGenerator;
 import com.nelani.recipe_search_backend.sockets.RecipeSocket;
@@ -13,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.ArrayList;
@@ -40,11 +37,11 @@ public class RecipeGeneratorTest {
     @BeforeEach
     public void init() {
         recipeList = new ArrayList<>();
-        recipeList.add(createRecipe("publicId","recipe0", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId1","recipe1", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId2","recipe2", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId3","recipe3", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId4","recipe4", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId", "recipe0", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId1", "recipe1", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId2", "recipe2", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId3", "recipe3", "imgUrl", 10));
+        recipeList.add(createRecipe("publicId4", "recipe4", "imgUrl", 10));
     }
 
     @Test

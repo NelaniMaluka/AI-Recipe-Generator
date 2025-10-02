@@ -42,6 +42,7 @@ public class Recipe {
     private Integer cookTimeMinutes;
 
     @Column(nullable = false)
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
