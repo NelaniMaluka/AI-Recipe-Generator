@@ -23,8 +23,14 @@ public class CacheConfig {
                 .maximumSize(1500));
 
         // Register caches with custom TTLs
+        cacheManager.registerCustomCache("AI recipes", Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofDays(1))
+                .maximumSize(500)
+                .build());
+
+        // Register caches with custom TTLs
         cacheManager.registerCustomCache("recipes", Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofDays(7))
+                .expireAfterWrite(Duration.ofDays(1))
                 .maximumSize(500)
                 .build());
 

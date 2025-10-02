@@ -1,6 +1,8 @@
 package com.nelani.recipe_search_backend.controller;
 
 import com.nelani.recipe_search_backend.dto.RecipeDto;
+import com.nelani.recipe_search_backend.model.DateFilter;
+import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.service.RecipeService;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -21,6 +23,16 @@ public class RecipeController {
         this.recipeService = recipeService;
     }
 
+    @GetMapping("/meal-types")
+    public ResponseEntity<?> getMealTypes() {
+        return ResponseEntity.ok(MealType.values());
+    }
+
+    @GetMapping("/date-filters")
+    public ResponseEntity<?> getDateFilters() {
+        return ResponseEntity.ok(DateFilter.values());
+    }
+
     @GetMapping("/{publicId}")
     public ResponseEntity<?> getRecipe(@PathVariable @NotBlank(message = "Recipe Id cannot be blank") String publicId) {
         RecipeDto recipe = recipeService.getRecipe(publicId);
@@ -34,6 +46,19 @@ public class RecipeController {
             @RequestParam(defaultValue = "5") int size
     ) {
         List<RecipeDto> recipes = recipeService.getRecipes(searchWord, page, size);
+        return ResponseEntity.ok(recipes);
+    }
+
+    @GetMapping("/all-recipes")
+    public ResponseEntity<?> getRecipesByTimeAndMealType(
+            @RequestParam(defaultValue = "0") int startTime,
+            @RequestParam(defaultValue = "180") int endTime,
+            @RequestParam(required = false) MealType mealType,
+            @RequestParam(defaultValue = "ALL") DateFilter dateFilter,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        List<RecipeDto> recipes = recipeService.getRecipesByTimeAndMealType(startTime, endTime, mealType, dateFilter, page, size);
         return ResponseEntity.ok(recipes);
     }
 

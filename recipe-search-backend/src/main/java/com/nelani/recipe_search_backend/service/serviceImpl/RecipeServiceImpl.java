@@ -2,16 +2,20 @@ package com.nelani.recipe_search_backend.service.serviceImpl;
 
 import com.nelani.recipe_search_backend.dto.RecipeDto;
 import com.nelani.recipe_search_backend.mapper.RecipeMapper;
+import com.nelani.recipe_search_backend.model.DateFilter;
+import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.model.Recipe;
 import com.nelani.recipe_search_backend.notifications.EmailService;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
 import com.nelani.recipe_search_backend.service.RecipeService;
 
+import com.nelani.recipe_search_backend.util.DateRangeUtil;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,7 +25,8 @@ public class RecipeServiceImpl implements RecipeService {
     private final RecipeRepository recipeRepository;
     private final EmailService emailService;
 
-    public RecipeServiceImpl(RecipeGenerator recipeGenerator, RecipeRepository recipeRepository, EmailService emailService) {
+    public RecipeServiceImpl(RecipeGenerator recipeGenerator, RecipeRepository recipeRepository,
+            EmailService emailService) {
         this.recipeGenerator = recipeGenerator;
         this.recipeRepository = recipeRepository;
         this.emailService = emailService;
@@ -39,20 +44,38 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
-    @Cacheable(value = "recipes", key = "#searchWord")
+    @Cacheable(value = "AI recipes", key = "#searchWord")
     public List<RecipeDto> getRecipes(String searchWord, int page, int size) {
         // Fetch fallback immediately
         Pageable pageable = PageRequest.of(page, size);
         List<Recipe> fallbackRecipes = recipeRepository.searchRecipes(searchWord, pageable);
         List<RecipeDto> fallbackRecipesDto = fallbackRecipes.stream()
                 .map(RecipeMapper::mapRecipeWithMinimalDetails)
-                        .toList();
+                .toList();
 
         // Trigger async AI generation for DB population
         recipeGenerator.generateAndSaveRecipes(searchWord);
 
-        //  ️Return fallback instantly
+        // ️Return fallback instantly
         return fallbackRecipesDto;
+    }
+
+    @Override
+    @Cacheable(value = "recipes", key = "#startTime + '_' + #endTime + '_' + #mealType + '_' + #dateFilter + '_' + #page + '_' + #size")
+    public List<RecipeDto> getRecipesByTimeAndMealType(int startTime, int endTime, MealType mealType,
+            DateFilter dateFilter, int page, int size) {
+        LocalDateTime[] range = DateRangeUtil.getDateRange(dateFilter);
+        LocalDateTime startDate = range[0];
+        LocalDateTime endDate = range[1];
+
+        // fetch the recipes
+        Pageable pageable = PageRequest.of(page, size);
+        List<Recipe> recipes = recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType, startDate,
+                endDate, pageable);
+
+        return recipes.stream()
+                .map(RecipeMapper::mapRecipeWithMinimalDetails)
+                .toList();
     }
 
     @Override
