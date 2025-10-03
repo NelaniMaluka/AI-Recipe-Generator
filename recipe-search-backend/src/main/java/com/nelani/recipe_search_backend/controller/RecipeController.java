@@ -6,6 +6,7 @@ import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.service.RecipeService;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,11 +25,13 @@ public class RecipeController {
     }
 
     @GetMapping("/meal-types")
+    @Cacheable("meal-types")
     public ResponseEntity<?> getMealTypes() {
         return ResponseEntity.ok(MealType.values());
     }
 
     @GetMapping("/date-filters")
+    @Cacheable("date-filters")
     public ResponseEntity<?> getDateFilters() {
         return ResponseEntity.ok(DateFilter.values());
     }

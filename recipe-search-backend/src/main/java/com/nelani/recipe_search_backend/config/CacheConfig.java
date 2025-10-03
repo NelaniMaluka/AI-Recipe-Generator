@@ -34,6 +34,18 @@ public class CacheConfig {
                 .maximumSize(500)
                 .build());
 
+        // Register caches with custom TTLs
+        cacheManager.registerCustomCache("meal-types", Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofDays(7))
+                .maximumSize(500)
+                .build());
+
+        // Register caches with custom TTLs
+        cacheManager.registerCustomCache("date-filters", Caffeine.newBuilder()
+                .expireAfterWrite(Duration.ofDays(7))
+                .maximumSize(500)
+                .build());
+
         return cacheManager;
     }
 
