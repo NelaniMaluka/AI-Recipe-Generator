@@ -1,8 +1,8 @@
-# 🍲 AI Recipe Generator Backend
+# AI Recipe Generator Backend
 
 This is the backend service for the AI Recipe Generator. It provides APIs for generating, storing, and sharing recipes, powered by AI models from Hugging Face and external image-generation services.
 
-## 🚀 Features
+## Features
 
 - **AI-powered recipe generation**
   - Uses Hugging Face models for generating recipe text.
@@ -21,7 +21,7 @@ This is the backend service for the AI Recipe Generator. It provides APIs for ge
   - Dockerized for consistent deployments.
   - Dependabot enabled for automatic dependency updates.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - Java 17 / Spring Boot
 - MS SQL Server (database)
