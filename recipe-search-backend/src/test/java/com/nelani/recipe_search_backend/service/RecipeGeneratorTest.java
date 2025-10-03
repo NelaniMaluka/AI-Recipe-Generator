@@ -45,8 +45,7 @@ public class RecipeGeneratorTest {
     }
 
     @Test
-    public void RecipeGenerator_SaveAll_ReturnVoid() {
-
+    public void RecipeGenerator_GenerateAndSaveRecipes_ReturnVoid() {
         // Act
         ArgumentCaptor<Recipe> recipeCaptor = ArgumentCaptor.forClass(Recipe.class);
         doReturn(recipeList).when(recipeGenerator).fetchRecipesFromAi(Mockito.anyString());

@@ -16,8 +16,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
@@ -127,6 +129,87 @@ public class RecipeRepositoryTest {
         // Retrieve non-existent recipe from DB and assert
         Pageable pageable = PageRequest.of(0, 5);
         List<Recipe> retrievedRecipesList = recipeRepository.searchRecipes("nonexistent", pageable);
+
+        Assertions.assertThat(retrievedRecipesList).isNotNull();
+        Assertions.assertThat(retrievedRecipesList).isEmpty();
+    }
+
+    @Test
+    public void RecipeRepository_FindByPublicId_ReturnOptionalRecipe() {
+        // Arrange
+        List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
+        List<Step> stepsList = List.of(createStep("description", 10));
+        Recipe saveRecipe = createRecipe("publicId", "recipe", "igmUrl", 10, ingredientsList, stepsList);
+
+        // Act
+        recipeRepository.save(saveRecipe);
+
+        // Retrieve the saved recipe from DB and assert
+        Recipe retrievedRecipe = recipeRepository.findByPublicId(saveRecipe.getPublicId()).get();
+        Assertions.assertThat(retrievedRecipe).isNotNull();
+        Assertions.assertThat(retrievedRecipe.getId()).isGreaterThan(0);
+        Assertions.assertThat(retrievedRecipe.getIngredients()).hasSize(1)
+                .first()
+                .hasFieldOrPropertyWithValue("name", "ingredient");
+        Assertions.assertThat(retrievedRecipe.getSteps()).hasSize(1)
+                .first()
+                .hasFieldOrPropertyWithValue("description", "description");
+    }
+
+    @Test
+    public void RecipeRepository_FindByPublicId_ReturnEmptyOptionalRecipe() {
+        // Retrieve non-existent recipe from DB and assert
+        Optional<Recipe> retrievedRecipesList = recipeRepository.findByPublicId("publicId ");
+
+        Assertions.assertThat(retrievedRecipesList).isNotNull();
+        Assertions.assertThat(retrievedRecipesList).isEmpty();
+    }
+
+    @Test
+    public void RecipeRepository_GetRecipesByTimeAndMealType_ReturnRecipeList() {
+        // Arrange
+        int startTime = 0;
+        int endTime = 180;
+        MealType mealType = MealType.APPETIZER;
+        LocalDateTime startDate = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime endDate = LocalDateTime.now().toLocalDate().plusDays(1).atStartOfDay();
+        Pageable pageable = PageRequest.of(0, 5);
+
+        // Act
+        recipeList.forEach(recipe -> {
+            recipeRepository.save(recipe);
+        });
+
+        // Assert
+        List<Recipe> retrievedRecipesList = recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType, startDate, endDate, pageable);
+
+        Assertions.assertThat(retrievedRecipesList).isNotNull();
+        Assertions.assertThat(retrievedRecipesList)
+                .hasSize(5)
+                .extracting(Recipe::getName)
+                .contains("recipe0", "recipe1", "recipe2", "recipe3", "recipe4");
+        retrievedRecipesList.forEach(recipe -> {
+            Assertions.assertThat(recipe.getIngredients())
+                    .extracting(Ingredient::getName)
+                    .contains("ingredient");
+            Assertions.assertThat(recipe.getSteps())
+                    .extracting(Step::getDescription)
+                    .contains("description");
+        });
+    }
+
+    @Test
+    public void RecipeRepository_GetRecipesByTimeAndMealType_ReturnEmptyList() {
+        // Arrange
+        int startTime = 0;
+        int endTime = 180;
+        MealType mealType = MealType.APPETIZER;
+        LocalDateTime startDate = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime endDate = LocalDateTime.now().toLocalDate().plusDays(1).atStartOfDay();
+        Pageable pageable = PageRequest.of(0, 5);
+
+        // Assert
+        List<Recipe> retrievedRecipesList = recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType, startDate, endDate, pageable);
 
         Assertions.assertThat(retrievedRecipesList).isNotNull();
         Assertions.assertThat(retrievedRecipesList).isEmpty();

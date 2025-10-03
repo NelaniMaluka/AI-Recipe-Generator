@@ -1,8 +1,11 @@
 package com.nelani.recipe_search_backend.controller;
 
+import com.nelani.recipe_search_backend.dto.IngredientDto;
 import com.nelani.recipe_search_backend.dto.RecipeDto;
-import com.nelani.recipe_search_backend.model.MealType;
+import com.nelani.recipe_search_backend.dto.StepDto;
+import com.nelani.recipe_search_backend.model.*;
 import com.nelani.recipe_search_backend.service.RecipeService;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,67 +34,167 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 public class RecipeControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private RecipeService recipeService;
+        @MockitoBean
+        private RecipeService recipeService;
 
-    private List<RecipeDto> recipeList;
+        private List<RecipeDto> recipeList;
 
-    @BeforeEach
-    public void init() {
-        recipeList = new ArrayList<>();
-        recipeList.add(createRecipe("publicId", "recipe0", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId1", "recipe1", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId2", "recipe2", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId3", "recipe3", "imgUrl", 10));
-        recipeList.add(createRecipe("publicId4", "recipe4", "imgUrl", 10));
-    }
+        @BeforeEach
+        public void init() {
+                List<IngredientDto> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
+                List<StepDto> stepsList = List.of(createStep("description", 10));
 
-    @Test
-    public void RecipeController_GetRecipes_ReturnRecipeDtoList() throws Exception {
-        // Arrange
-        when(recipeService.getRecipes("recipe", 0, 5)).thenReturn(recipeList);
+                recipeList = new ArrayList<>();
+                recipeList.add(createRecipe("publicId", "recipe0", "imgUrl", 10, ingredientsList, stepsList));
+                recipeList.add(createRecipe("publicId1", "recipe1", "imgUrl", 10, ingredientsList, stepsList));
+                recipeList.add(createRecipe("publicId2", "recipe2", "imgUrl", 10, ingredientsList, stepsList));
+                recipeList.add(createRecipe("publicId3", "recipe3", "imgUrl", 10, ingredientsList, stepsList));
+                recipeList.add(createRecipe("publicId4", "recipe4", "imgUrl", 10, ingredientsList, stepsList));
+        }
 
-        // Act
-        ResultActions response = mockMvc.perform(
-                get("/api/recipe")
-                        .param("searchWord", "recipe")
-                        .param("page", "0")
-                        .param("size", "5")
-                        .contentType(MediaType.APPLICATION_JSON));
+        @Test
+        public void RecipeController_GetRecipe_ReturnsRecipeDto() throws Exception {
+                List<IngredientDto> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
+                List<StepDto> stepsList = List.of(createStep("description", 10));
+                RecipeDto savedRecipe = createRecipe("publicId", "recipe0", "imgUrl", 10, ingredientsList, stepsList);
 
-        // Assert
-        response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(jsonPath("$.length()", CoreMatchers.is(recipeList.size())))
-                .andExpect(jsonPath("$[0].name").value("recipe0"))
-                .andExpect(jsonPath("$[1].name").value("recipe1"));
-    }
+                // Act
+                when(recipeService.getRecipe("publicId")).thenReturn(savedRecipe);
+                ResultActions response = mockMvc.perform(
+                                get("/api/recipe/publicId")
+                                                .contentType(MediaType.APPLICATION_JSON));
 
-    @Test
-    public void RecipeController_GetRecipes_ReturnEmptyList() throws Exception {
-        // Act
-        ResultActions response = mockMvc.perform(
-                get("/api/recipe")
-                        .param("searchWord", "recipe")
-                        .param("page", "0")
-                        .param("size", "5")
-                        .contentType(MediaType.APPLICATION_JSON));
+                // Asserts
+                Assertions.assertThat(response).isNotNull();
+                response.andExpect(MockMvcResultMatchers.status().isOk())
+                                .andExpect(jsonPath("$.name").value("recipe0"));
+        }
 
-        // Assert
-        response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$").isEmpty())
-                .andExpect(jsonPath("$.length()", CoreMatchers.is(0)));
-    }
+        @Test
+        public void RecipeController_GetRecipe_ReturnsException() throws Exception {
+                when(recipeService.getRecipe("invalid"))
+                                .thenThrow(new IllegalArgumentException("Invalid recipe Id."));
 
-    private RecipeDto createRecipe(String publicId, String name, String imgUrl, int cookTimeMinutes) {
-        return RecipeDto.builder()
-                .publicId(publicId)
-                .name(name)
-                .imageUrl(imgUrl)
-                .mealType(MealType.APPETIZER)
-                .cookTimeMinutes(cookTimeMinutes)
-                .build();
-    }
+                // Act
+                ResultActions response = mockMvc.perform(
+                                get("/api/recipe/invalid")
+                                                .contentType(MediaType.APPLICATION_JSON));
+
+                // Asserts
+                response.andExpect(MockMvcResultMatchers.status().isBadRequest());
+        }
+
+        @Test
+        public void RecipeController_GetMealTypes_ReturnMealTypeList() throws Exception {
+                // Act
+                ResultActions response = mockMvc.perform(
+                                get("/api/recipe/meal-types")
+                                                .contentType(MediaType.APPLICATION_JSON));
+
+                // Assert
+                response.andExpect(MockMvcResultMatchers.status().isOk())
+                                .andExpect(jsonPath("$.length()", CoreMatchers.is(MealType.values().length)));
+        }
+
+        @Test
+        public void RecipeController_GetDateFilter_ReturnDateFilterList() throws Exception {
+                // Act
+                ResultActions response = mockMvc.perform(
+                                get("/api/recipe/date-filters")
+                                                .contentType(MediaType.APPLICATION_JSON));
+
+                // Assert
+                response.andExpect(MockMvcResultMatchers.status().isOk())
+                                .andExpect(jsonPath("$.length()", CoreMatchers.is(DateFilter.values().length)));
+        }
+
+        @Test
+        public void RecipeController_GetRecipes_ReturnRecipeDtoList() throws Exception {
+                // Arrange
+                when(recipeService.getRecipes("recipe", 0, 5)).thenReturn(recipeList);
+
+                // Act
+                ResultActions response = mockMvc.perform(
+                                get("/api/recipe")
+                                                .param("searchWord", "recipe")
+                                                .param("page", "0")
+                                                .param("size", "5")
+                                                .contentType(MediaType.APPLICATION_JSON));
+
+                // Assert
+                response.andExpect(MockMvcResultMatchers.status().isOk())
+                                .andExpect(jsonPath("$.length()", CoreMatchers.is(recipeList.size())))
+                                .andExpect(jsonPath("$[0].name").value("recipe0"))
+                                .andExpect(jsonPath("$[1].name").value("recipe1"));
+        }
+
+        @Test
+        public void RecipeController_GetRecipesByTimeAndMealType_ReturnRecipeDtoList() throws Exception {
+                // Arrange
+                when(recipeService.getRecipesByTimeAndMealType(0, 180, MealType.APPETIZER, DateFilter.TODAY, 0, 5))
+                                .thenReturn(recipeList);
+
+                // Act
+                ResultActions response = mockMvc.perform(
+                                get("/api/recipe/all-recipes")
+                                                .param("startTime", String.valueOf(0))
+                                                .param("endTime", String.valueOf(180))
+                                                .param("mealType", "APPETIZER")
+                                                .param("dateFilter", "TODAY")
+                                                .param("page", String.valueOf(0))
+                                                .param("size", String.valueOf(5))
+                                                .contentType(MediaType.APPLICATION_JSON));
+
+                // Assert
+                response.andExpect(MockMvcResultMatchers.status().isOk())
+                                .andExpect(jsonPath("$.length()", CoreMatchers.is(recipeList.size())))
+                                .andExpect(jsonPath("$[0].name").value("recipe0"))
+                                .andExpect(jsonPath("$[1].name").value("recipe1"));
+        }
+
+        @Test
+        public void RecipeController_GetRecipes_ReturnEmptyList() throws Exception {
+                // Act
+                ResultActions response = mockMvc.perform(
+                                get("/api/recipe")
+                                                .param("searchWord", "recipe")
+                                                .param("page", "0")
+                                                .param("size", "5")
+                                                .contentType(MediaType.APPLICATION_JSON));
+
+                // Assert
+                response.andExpect(MockMvcResultMatchers.status().isOk())
+                                .andExpect(MockMvcResultMatchers.jsonPath("$").isEmpty())
+                                .andExpect(jsonPath("$.length()", CoreMatchers.is(0)));
+        }
+
+        private IngredientDto createIngredient(String name, String quantity) {
+                return IngredientDto.builder()
+                                .name(name)
+                                .quantity(quantity)
+                                .build();
+        }
+
+        private StepDto createStep(String description, int minutes) {
+                return StepDto.builder()
+                                .description(description)
+                                .estimatedMinutes(minutes)
+                                .build();
+        }
+
+        private RecipeDto createRecipe(String publicId, String name, String imgUrl, int cookTimeMinutes,
+                        List<IngredientDto> ingredients, List<StepDto> steps) {
+                return RecipeDto.builder()
+                                .publicId(publicId)
+                                .name(name)
+                                .imageUrl(imgUrl)
+                                .mealType(MealType.APPETIZER)
+                                .cookTimeMinutes(cookTimeMinutes)
+                                .ingredients(ingredients)
+                                .steps(steps)
+                                .build();
+        }
 }
