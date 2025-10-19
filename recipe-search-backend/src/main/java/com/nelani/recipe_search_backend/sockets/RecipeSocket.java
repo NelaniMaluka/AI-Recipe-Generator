@@ -1,6 +1,6 @@
 package com.nelani.recipe_search_backend.sockets;
 
-import com.nelani.recipe_search_backend.dto.RecipeDto;
+import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.mapper.RecipeMapper;
 import com.nelani.recipe_search_backend.model.Recipe;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -17,8 +17,8 @@ public class RecipeSocket {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public void sendAiResults (List<Recipe> recipes, String searchTerm) {
-        List<RecipeDto> formattedRecipes = recipes.stream()
+    public void sendAiResults(List<Recipe> recipes, String searchTerm) {
+        List<RecipeResponse> formattedRecipes = recipes.stream()
                 .map(RecipeMapper::mapRecipeWithMinimalDetails)
                 .toList();
         messagingTemplate.convertAndSend("/topic/recipes/" + searchTerm, formattedRecipes);

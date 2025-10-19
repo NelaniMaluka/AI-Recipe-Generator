@@ -27,7 +27,10 @@ public class DateRangeUtil {
                 return new LocalDateTime[] { startOfMonth.atStartOfDay(), endOfMonth.atStartOfDay() };
             }
             default -> {
-                return new LocalDateTime[] { null, null };
+                return new LocalDateTime[] {
+                        LocalDateTime.of(2025, 1, 1, 0, 0),
+                        LocalDateTime.now().plusYears(1)
+                };
             }
         }
     }

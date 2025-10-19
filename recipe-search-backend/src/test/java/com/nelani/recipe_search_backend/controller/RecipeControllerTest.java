@@ -1,8 +1,8 @@
 package com.nelani.recipe_search_backend.controller;
 
-import com.nelani.recipe_search_backend.dto.IngredientDto;
-import com.nelani.recipe_search_backend.dto.RecipeDto;
-import com.nelani.recipe_search_backend.dto.StepDto;
+import com.nelani.recipe_search_backend.response.IngredientResponse;
+import com.nelani.recipe_search_backend.response.RecipeResponse;
+import com.nelani.recipe_search_backend.response.StepResponse;
 import com.nelani.recipe_search_backend.model.*;
 import com.nelani.recipe_search_backend.service.RecipeService;
 import org.assertj.core.api.Assertions;
@@ -40,26 +40,25 @@ public class RecipeControllerTest {
         @MockitoBean
         private RecipeService recipeService;
 
-        private List<RecipeDto> recipeList;
+        private List<RecipeResponse> recipeList;
 
         @BeforeEach
         public void init() {
-                List<IngredientDto> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
-                List<StepDto> stepsList = List.of(createStep("description", 10));
-
                 recipeList = new ArrayList<>();
-                recipeList.add(createRecipe("publicId", "recipe0", "imgUrl", 10, ingredientsList, stepsList));
-                recipeList.add(createRecipe("publicId1", "recipe1", "imgUrl", 10, ingredientsList, stepsList));
-                recipeList.add(createRecipe("publicId2", "recipe2", "imgUrl", 10, ingredientsList, stepsList));
-                recipeList.add(createRecipe("publicId3", "recipe3", "imgUrl", 10, ingredientsList, stepsList));
-                recipeList.add(createRecipe("publicId4", "recipe4", "imgUrl", 10, ingredientsList, stepsList));
+                for (int i = 0; i < 5; i++) {
+                        List<IngredientResponse> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
+                        List<StepResponse> stepsList = List.of(createStep("description", 10));
+                        recipeList.add(createRecipe("publicId" + i, "recipe" + i, "imgUrl", 10, ingredientsList,
+                                        stepsList));
+                }
         }
 
         @Test
         public void RecipeController_GetRecipe_ReturnsRecipeDto() throws Exception {
-                List<IngredientDto> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
-                List<StepDto> stepsList = List.of(createStep("description", 10));
-                RecipeDto savedRecipe = createRecipe("publicId", "recipe0", "imgUrl", 10, ingredientsList, stepsList);
+                List<IngredientResponse> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
+                List<StepResponse> stepsList = List.of(createStep("description", 10));
+                RecipeResponse savedRecipe = createRecipe("publicId", "recipe0", "imgUrl", 10, ingredientsList,
+                                stepsList);
 
                 // Act
                 when(recipeService.getRecipe("publicId")).thenReturn(savedRecipe);
@@ -171,23 +170,23 @@ public class RecipeControllerTest {
                                 .andExpect(jsonPath("$.length()", CoreMatchers.is(0)));
         }
 
-        private IngredientDto createIngredient(String name, String quantity) {
-                return IngredientDto.builder()
+        private IngredientResponse createIngredient(String name, String quantity) {
+                return IngredientResponse.builder()
                                 .name(name)
                                 .quantity(quantity)
                                 .build();
         }
 
-        private StepDto createStep(String description, int minutes) {
-                return StepDto.builder()
+        private StepResponse createStep(String description, int minutes) {
+                return StepResponse.builder()
                                 .description(description)
                                 .estimatedMinutes(minutes)
                                 .build();
         }
 
-        private RecipeDto createRecipe(String publicId, String name, String imgUrl, int cookTimeMinutes,
-                        List<IngredientDto> ingredients, List<StepDto> steps) {
-                return RecipeDto.builder()
+        private RecipeResponse createRecipe(String publicId, String name, String imgUrl, int cookTimeMinutes,
+                        List<IngredientResponse> ingredients, List<StepResponse> steps) {
+                return RecipeResponse.builder()
                                 .publicId(publicId)
                                 .name(name)
                                 .imageUrl(imgUrl)

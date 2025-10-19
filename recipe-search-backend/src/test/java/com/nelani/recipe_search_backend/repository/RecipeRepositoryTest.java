@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
@@ -33,15 +34,12 @@ public class RecipeRepositoryTest {
 
     @BeforeEach
     public void init() {
-        List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
-        List<Step> stepsList = List.of(createStep("description", 10));
-
         recipeList = new ArrayList<>();
-        recipeList.add(createRecipe("publicId", "recipe0", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("publicId1", "recipe1", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("publicId2", "recipe2", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("publicId3", "recipe3", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("publicId4", "recipe4", "imgUrl", 10, ingredientsList, stepsList));
+        for (int i = 0; i < 5; i++) {
+            List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
+            List<Step> stepsList = List.of(createStep("description", 10));
+            recipeList.add(createRecipe("publicId" + i, "recipe" + i, "imgUrl", 10, ingredientsList, stepsList));
+        }
     }
 
     @Test
@@ -57,7 +55,7 @@ public class RecipeRepositoryTest {
         // Retrieve the saved recipe from DB and assert
         Recipe retrievedRecipe = recipeRepository.findById(saveRecipe.getId()).orElse(null);
         Assertions.assertThat(retrievedRecipe).isNotNull();
-        Assertions.assertThat(retrievedRecipe.getId()).isGreaterThan(0);
+        Assertions.assertThat(retrievedRecipe.getId()).isEqualTo(saveRecipe.getId());
         Assertions.assertThat(retrievedRecipe.getIngredients()).hasSize(1)
                 .first()
                 .hasFieldOrPropertyWithValue("name", "ingredient");
@@ -103,24 +101,27 @@ public class RecipeRepositoryTest {
         recipeRepository.save(saveRecipe);
 
         // Retrieve the saved recipe from DB and assert
-        boolean recipeMatch = recipeRepository.existsByName(saveRecipe.getName());
+        boolean recipeMatch = recipeRepository.existsByUniquenessIdentifier(saveRecipe.getUniquenessIdentifier());
         Assertions.assertThat(recipeMatch).isTrue();
     }
 
     @Test
     public void RecipeRepository_CheckRecipe_FindNonMatchingRecipe() {
         // Arrange
-        List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
-        List<Step> stepsList = List.of(createStep("description", 10));
-        Recipe saveRecipe = createRecipe("publicId", "recipe", "igmUrl", 10, ingredientsList, stepsList);
+        List<Ingredient> saveIngredients = List.of(createIngredient("ingredient", "4 cups"));
+        List<Step> saveSteps = List.of(createStep("description", 10));
+        Recipe saveRecipe = createRecipe("publicId", "recipe", "imgUrl", 10, saveIngredients, saveSteps);
 
-        Recipe checkRecipe = createRecipe("publicId", "recipe2", "igmUrl", 10, ingredientsList, stepsList);
+        // Create fresh instances for checkRecipe
+        List<Ingredient> checkIngredients = List.of(createIngredient("ingredient", "4 cups"));
+        List<Step> checkSteps = List.of(createStep("description", 10));
+        Recipe checkRecipe = createRecipe("publicId", "recipe2", "imgUrl", 10, checkIngredients, checkSteps);
 
         // Act
         recipeRepository.save(saveRecipe);
 
-        // Retrieve the saved recipe from DB and assert
-        boolean recipeMatch = recipeRepository.existsByName(checkRecipe.getName());
+        // Assert
+        boolean recipeMatch = recipeRepository.existsByUniquenessIdentifier(checkRecipe.getUniquenessIdentifier());
         Assertions.assertThat(recipeMatch).isFalse();
     }
 
@@ -147,7 +148,7 @@ public class RecipeRepositoryTest {
         // Retrieve the saved recipe from DB and assert
         Recipe retrievedRecipe = recipeRepository.findByPublicId(saveRecipe.getPublicId()).get();
         Assertions.assertThat(retrievedRecipe).isNotNull();
-        Assertions.assertThat(retrievedRecipe.getId()).isGreaterThan(0);
+        Assertions.assertThat(retrievedRecipe.getId()).isEqualTo(saveRecipe.getId());
         Assertions.assertThat(retrievedRecipe.getIngredients()).hasSize(1)
                 .first()
                 .hasFieldOrPropertyWithValue("name", "ingredient");
@@ -181,7 +182,8 @@ public class RecipeRepositoryTest {
         });
 
         // Assert
-        List<Recipe> retrievedRecipesList = recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType, startDate, endDate, pageable);
+        Page<Recipe> retrievedRecipesList = recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType,
+                startDate, endDate, pageable);
 
         Assertions.assertThat(retrievedRecipesList).isNotNull();
         Assertions.assertThat(retrievedRecipesList)
@@ -209,7 +211,8 @@ public class RecipeRepositoryTest {
         Pageable pageable = PageRequest.of(0, 5);
 
         // Assert
-        List<Recipe> retrievedRecipesList = recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType, startDate, endDate, pageable);
+        Page<Recipe> retrievedRecipesList = recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType,
+                startDate, endDate, pageable);
 
         Assertions.assertThat(retrievedRecipesList).isNotNull();
         Assertions.assertThat(retrievedRecipesList).isEmpty();
@@ -229,8 +232,9 @@ public class RecipeRepositoryTest {
                 .build();
     }
 
-    private Recipe createRecipe(String publicId, String name, String imgUrl, int cookTimeMinutes, List<Ingredient> ingredients, List<Step> steps) {
-        return Recipe.builder()
+    private Recipe createRecipe(String publicId, String name, String imgUrl, int cookTimeMinutes,
+            List<Ingredient> ingredients, List<Step> steps) {
+        Recipe recipe = Recipe.builder()
                 .publicId(publicId)
                 .name(name)
                 .imageUrl(imgUrl)
@@ -239,8 +243,11 @@ public class RecipeRepositoryTest {
                 .ingredients(ingredients)
                 .steps(steps)
                 .build();
+
+        ingredients.forEach(ingredient -> ingredient.setRecipe(recipe));
+        steps.forEach(step -> step.setRecipe(recipe));
+
+        return recipe;
     }
 
 }
-
-

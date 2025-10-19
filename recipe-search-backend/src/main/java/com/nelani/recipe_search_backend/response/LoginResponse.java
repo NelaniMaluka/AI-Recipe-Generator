@@ -1,4 +1,4 @@
-package com.nelani.recipe_search_backend.dto;
+package com.nelani.recipe_search_backend.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class StepDto {
-    private String description;
-    private int estimatedMinutes;
+public class LoginResponse {
+    private String token;
+    private long expiresIn;
+    private UserResponse user;
 }
