@@ -1,6 +1,6 @@
 package com.nelani.recipe_search_backend.controller;
 
-import com.nelani.recipe_search_backend.dto.RecipeDto;
+import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.model.DateFilter;
 import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.service.RecipeService;
@@ -38,7 +38,7 @@ public class RecipeController {
 
     @GetMapping("/{publicId}")
     public ResponseEntity<?> getRecipe(@PathVariable @NotBlank(message = "Recipe Id cannot be blank") String publicId) {
-        RecipeDto recipe = recipeService.getRecipe(publicId);
+        RecipeResponse recipe = recipeService.getRecipe(publicId);
         return ResponseEntity.ok(recipe);
     }
 
@@ -46,9 +46,8 @@ public class RecipeController {
     public ResponseEntity<?> getRecipes(
             @RequestParam @NotBlank(message = "Search word cannot be blank") String searchWord,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size
-    ) {
-        List<RecipeDto> recipes = recipeService.getRecipes(searchWord, page, size);
+            @RequestParam(defaultValue = "5") int size) {
+        List<RecipeResponse> recipes = recipeService.getRecipes(searchWord, page, size);
         return ResponseEntity.ok(recipes);
     }
 
@@ -59,20 +58,16 @@ public class RecipeController {
             @RequestParam(required = false) MealType mealType,
             @RequestParam(defaultValue = "ALL") DateFilter dateFilter,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        List<RecipeDto> recipes = recipeService.getRecipesByTimeAndMealType(startTime, endTime, mealType, dateFilter, page, size);
+            @RequestParam(defaultValue = "20") int size) {
+        List<RecipeResponse> recipes = recipeService.getRecipesByTimeAndMealType(startTime, endTime, mealType,
+                dateFilter, page, size);
         return ResponseEntity.ok(recipes);
     }
 
     @PostMapping("/email-recipe")
     public ResponseEntity<?> emailRecipe(
-            @RequestParam
-            @NotBlank(message = "Email cannot be blank")
-            @Email(message = "Invalid email format") String email,
-
-            @NotBlank(message = "Recipe Id cannot be blank") String publicId
-    ) {
+            @RequestParam @NotBlank(message = "Email cannot be blank") @Email(message = "Invalid email format") String email,
+            @NotBlank(message = "Recipe Id cannot be blank") String publicId) {
         recipeService.emailRecipe(email, publicId);
         return ResponseEntity.ok("Recipe has been successfully sent to " + email);
     }

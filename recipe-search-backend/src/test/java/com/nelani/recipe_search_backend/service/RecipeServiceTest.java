@@ -1,6 +1,6 @@
 package com.nelani.recipe_search_backend.service;
 
-import com.nelani.recipe_search_backend.dto.RecipeDto;
+import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.model.*;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
 import com.nelani.recipe_search_backend.service.serviceImpl.RecipeGenerator;
@@ -12,9 +12,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.data.domain.Page;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -44,15 +47,12 @@ public class RecipeServiceTest {
 
     @BeforeEach
     public void init() {
-        List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
-        List<Step> stepsList = List.of(createStep("description", 10));
-
         recipeList = new ArrayList<>();
-        recipeList.add(createRecipe("publicId", "recipe0", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("publicId1", "recipe1", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("publicId2", "recipe2", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("publicId3", "recipe3", "imgUrl", 10, ingredientsList, stepsList));
-        recipeList.add(createRecipe("publicId4", "recipe4", "imgUrl", 10, ingredientsList, stepsList));
+        for (int i = 0; i < 5; i++) {
+            List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
+            List<Step> stepsList = List.of(createStep("description", 10));
+            recipeList.add(createRecipe("publicId" + i, "recipe" + i, "imgUrl", 10, ingredientsList, stepsList));
+        }
     }
 
     @Test
@@ -66,7 +66,7 @@ public class RecipeServiceTest {
         when(recipeRepository.findByPublicId("publicId")).thenReturn(savedRecipe);
 
         // Asserts
-        RecipeDto retrievedRecipe = recipeService.getRecipe("publicId");
+        RecipeResponse retrievedRecipe = recipeService.getRecipe("publicId");
         Assertions.assertThat(retrievedRecipe).isNotNull();
         Assertions.assertThat(retrievedRecipe.getName()).isEqualTo("recipe0");
     }
@@ -89,11 +89,11 @@ public class RecipeServiceTest {
         doNothing().when(recipeGenerator).generateAndSaveRecipes(any(String.class));
 
         // Assert
-        List<RecipeDto> retrievedRecipeDtoList = recipeService.getRecipes("recipe", 0, 5);
-        Assertions.assertThat(retrievedRecipeDtoList).isNotNull();
-        Assertions.assertThat(retrievedRecipeDtoList)
+        List<RecipeResponse> retrievedRecipeResponseList = recipeService.getRecipes("recipe", 0, 5);
+        Assertions.assertThat(retrievedRecipeResponseList).isNotNull();
+        Assertions.assertThat(retrievedRecipeResponseList)
                 .hasSize(5)
-                .extracting(RecipeDto::getName)
+                .extracting(RecipeResponse::getName)
                 .contains("recipe0", "recipe1", "recipe2", "recipe3", "recipe4");
     }
 
@@ -108,9 +108,9 @@ public class RecipeServiceTest {
         doNothing().when(recipeGenerator).generateAndSaveRecipes(any(String.class));
 
         // Assert
-        List<RecipeDto> retrievedRecipeDtoList = recipeService.getRecipes("recipe", 0, 5);
-        Assertions.assertThat(retrievedRecipeDtoList).isNotNull();
-        Assertions.assertThat(retrievedRecipeDtoList).isEmpty();
+        List<RecipeResponse> retrievedRecipeResponseList = recipeService.getRecipes("recipe", 0, 5);
+        Assertions.assertThat(retrievedRecipeResponseList).isNotNull();
+        Assertions.assertThat(retrievedRecipeResponseList).isEmpty();
     }
 
     @Test
@@ -119,23 +119,38 @@ public class RecipeServiceTest {
         int startTime = 0;
         int endTime = 180;
         MealType mealType = MealType.APPETIZER;
-        LocalDateTime startDate = LocalDateTime.now().toLocalDate().atStartOfDay();
-        LocalDateTime endDate = LocalDateTime.now().toLocalDate().plusDays(1).atStartOfDay();
         DateFilter dateFilter = DateFilter.TODAY;
         Pageable pageable = PageRequest.of(0, 5);
 
+        // Create mock recipe list
+        List<Recipe> recipeList = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Recipe recipe = new Recipe();
+            recipe.setName("recipe" + i);
+            recipeList.add(recipe);
+        }
+
+        // Wrap list in a Page
+        Page<Recipe> recipePage = new PageImpl<>(recipeList, pageable, recipeList.size());
+
+        // Mock the repository
+        when(recipeRepository.getRecipesByTimeAndMealType(
+                eq(startTime),
+                eq(endTime),
+                eq(mealType),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class),
+                any(Pageable.class))).thenReturn(recipePage);
+
         // Act
-        when(recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType, startDate, endDate, pageable))
-                .thenReturn(recipeList);
+        List<RecipeResponse> retrievedRecipesList = recipeService.getRecipesByTimeAndMealType(startTime, endTime,
+                mealType, dateFilter, 0, 5);
 
         // Assert
-        List<RecipeDto> retrievedRecipesList = recipeService.getRecipesByTimeAndMealType(startTime, endTime, mealType,
-                dateFilter, 0, 5);
-
         Assertions.assertThat(retrievedRecipesList).isNotNull();
         Assertions.assertThat(retrievedRecipesList)
                 .hasSize(5)
-                .extracting(RecipeDto::getName)
+                .extracting(RecipeResponse::getName)
                 .contains("recipe0", "recipe1", "recipe2", "recipe3", "recipe4");
     }
 
@@ -147,10 +162,19 @@ public class RecipeServiceTest {
         MealType mealType = MealType.APPETIZER;
         DateFilter dateFilter = DateFilter.TODAY;
 
-        // Assert
-        List<RecipeDto> retrievedRecipesList = recipeService.getRecipesByTimeAndMealType(startTime, endTime, mealType,
-                dateFilter, 0, 5);
+        when(recipeRepository.getRecipesByTimeAndMealType(
+                eq(startTime),
+                eq(endTime),
+                eq(mealType),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class),
+                any(Pageable.class))).thenReturn(Page.empty());
 
+        // Act
+        List<RecipeResponse> retrievedRecipesList = recipeService.getRecipesByTimeAndMealType(
+                startTime, endTime, mealType, dateFilter, 0, 5);
+
+        // Assert
         Assertions.assertThat(retrievedRecipesList).isNotNull();
         Assertions.assertThat(retrievedRecipesList).isEmpty();
     }
@@ -171,7 +195,7 @@ public class RecipeServiceTest {
 
     private Recipe createRecipe(String publicId, String name, String imgUrl, int cookTimeMinutes,
             List<Ingredient> ingredients, List<Step> steps) {
-        return Recipe.builder()
+        Recipe recipe = Recipe.builder()
                 .publicId(publicId)
                 .name(name)
                 .imageUrl(imgUrl)
@@ -180,5 +204,10 @@ public class RecipeServiceTest {
                 .ingredients(ingredients)
                 .steps(steps)
                 .build();
+
+        ingredients.forEach(ingredient -> ingredient.setRecipe(recipe));
+        steps.forEach(step -> step.setRecipe(recipe));
+
+        return recipe;
     }
 }

@@ -44,6 +44,7 @@ public class RecipeGenerator {
     }
 
     @Async("recipeTaskExecutor")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void generateAndSaveRecipes(String searchWord) {
         // Call AI service to fetch recipes (may return empty if AI fails or no matches
         // found)
@@ -60,7 +61,7 @@ public class RecipeGenerator {
         recipes.forEach(recipe -> {
             try {
                 // Attempt to insert recipe into DB
-                boolean exists = recipeRepository.existsByName(recipe.getName());
+                boolean exists = recipeRepository.existsByUniquenessIdentifier(recipe.getUniquenessIdentifier());
 
                 if (!exists) {
                     saveRecipe(recipe);

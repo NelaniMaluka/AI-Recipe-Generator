@@ -1,4 +1,4 @@
-package com.nelani.recipe_search_backend.dto;
+package com.nelani.recipe_search_backend.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nelani.recipe_search_backend.model.MealType;
@@ -14,13 +14,13 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RecipeDto {
+public class RecipeResponse {
     private String publicId;
     private String name;
     private String imageUrl;
     private MealType mealType;
     private Integer cookTimeMinutes;
 
-    private List<IngredientDto> ingredients;
-    private List<StepDto> steps;
+    private List<IngredientResponse> ingredients;
+    private List<StepResponse> steps;
 }
