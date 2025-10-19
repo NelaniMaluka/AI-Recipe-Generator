@@ -4,6 +4,7 @@ import com.nelani.recipe_search_backend.response.IngredientResponse;
 import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.response.StepResponse;
 import com.nelani.recipe_search_backend.model.*;
+import com.nelani.recipe_search_backend.security.JwtService;
 import com.nelani.recipe_search_backend.service.RecipeService;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
@@ -39,6 +40,9 @@ public class RecipeControllerTest {
 
         @MockitoBean
         private RecipeService recipeService;
+
+        @MockitoBean
+        private JwtService jwtService;
 
         private List<RecipeResponse> recipeList;
 
