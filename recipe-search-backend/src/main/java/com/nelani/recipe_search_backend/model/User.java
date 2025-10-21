@@ -3,7 +3,6 @@ package com.nelani.recipe_search_backend.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -44,10 +43,6 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Pattern(regexp = "\\+?[0-9]{10,15}", message = "Phone number must be numeric and 10-15 digits")
-    @Column(unique = true)
-    private String phoneNumber;
-
     @NotBlank(message = "Password must not be blank")
     private String password;
 
@@ -83,4 +78,10 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
+
+    @Override
+    public String getUsername() {
+        return this.username;
+    }
+
 }

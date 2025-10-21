@@ -6,15 +6,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponse {
+    private String publicId;
     private String firstname;
     private String lastname;
-    private String username;
     private String email;
-    private String phoneNumber;
+
+    private List<String> allergies;
 }

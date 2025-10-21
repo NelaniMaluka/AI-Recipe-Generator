@@ -35,6 +35,14 @@ public class RecipeServiceImpl implements RecipeService {
                 this.emailService = emailService;
         }
 
+        /**
+         * Retrieves a recipe by its public ID and returns a detailed response.
+         *
+         * @param publicId the unique public identifier of the recipe
+         * @return a RecipeResponse containing all recipe details
+         * @throws IllegalArgumentException if no recipe is found with the given public
+         *                                  ID
+         */
         @Override
         @Cacheable(value = "recipe", key = "#publicId")
         @Transactional
@@ -47,6 +55,16 @@ public class RecipeServiceImpl implements RecipeService {
                 return RecipeMapper.mapRecipeWithAllDetails(recipe);
         }
 
+        /**
+         * Searches for recipes based on a keyword and returns paginated results.
+         * Provides immediate fallback results from the database while triggering
+         * asynchronous AI-based recipe generation for future queries.
+         *
+         * @param searchWord the keyword to search recipes
+         * @param page       the page number for pagination (0-based)
+         * @param size       the number of recipes per page
+         * @return a list of RecipeResponse objects with minimal details
+         */
         @Override
         @Cacheable(value = "AI recipes", key = "#searchWord")
         @Transactional
@@ -65,6 +83,18 @@ public class RecipeServiceImpl implements RecipeService {
                 return fallbackRecipesDto;
         }
 
+        /**
+         * Retrieves recipes filtered by preparation time, meal type, and date range,
+         * with support for pagination. Results are cached to improve performance.
+         *
+         * @param startTime  minimum preparation time in minutes
+         * @param endTime    maximum preparation time in minutes
+         * @param mealType   type of meal (e.g., APPETIZER, MAIN, DESSERT)
+         * @param dateFilter filter to limit recipes to a specific date range
+         * @param page       zero-based page index for pagination
+         * @param size       number of recipes per page
+         * @return a list of RecipeResponse objects with minimal details
+         */
         @Override
         @Cacheable(value = "recipes", key = "#startTime + '_' + #endTime + '_' + #mealType + '_' + #dateFilter + '_' + #page + '_' + #size")
         @Transactional
@@ -84,6 +114,20 @@ public class RecipeServiceImpl implements RecipeService {
                                 .toList();
         }
 
+        /**
+         * Sends a detailed HTML email of a specific recipe to a given email address.
+         *
+         * <p>
+         * The email includes the recipe name, meal type, cook time, ingredients
+         * (with quantities), and step-by-step instructions (with estimated times),
+         * formatted with a branded HTML template.
+         * </p>
+         *
+         * @param email    the recipient's email address
+         * @param publicId the unique public ID of the recipe to email
+         * @throws IllegalArgumentException if the recipe with the given publicId does
+         *                                  not exist
+         */
         @Override
         @Transactional
         public void emailRecipe(String email, String publicId) {

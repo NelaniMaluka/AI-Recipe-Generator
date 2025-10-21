@@ -8,18 +8,22 @@ import com.nelani.recipe_search_backend.model.User;
 import com.nelani.recipe_search_backend.model.UserVerification;
 import com.nelani.recipe_search_backend.model.VerificationType;
 import com.nelani.recipe_search_backend.notifications.EmailService;
+import com.nelani.recipe_search_backend.repository.UserAllergyRepository;
 import com.nelani.recipe_search_backend.repository.UserRepository;
 import com.nelani.recipe_search_backend.repository.UserVerificationRepository;
 import com.nelani.recipe_search_backend.response.LoginResponse;
 import com.nelani.recipe_search_backend.security.JwtService;
 import com.nelani.recipe_search_backend.service.AuthenticationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -29,22 +33,37 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final UserRepository userRepository;
     private final UserVerificationRepository userVerificationRepository;
+    private final UserAllergyRepository userAllergyRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
 
     public AuthenticationServiceImpl(UserRepository userRepository,
-            UserVerificationRepository userVerificationRepository, PasswordEncoder passwordEncoder,
-            JwtService jwtService, AuthenticationManager authenticationManager, EmailService emailService) {
+            UserVerificationRepository userVerificationRepository, UserAllergyRepository userAllergyRepository,
+            PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager,
+            EmailService emailService) {
         this.userRepository = userRepository;
         this.userVerificationRepository = userVerificationRepository;
+        this.userAllergyRepository = userAllergyRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.emailService = emailService;
     }
 
+    /**
+     * Registers a new user with the provided details.
+     * <p>
+     * Validates that no existing user has the same email, generates a unique
+     * username,
+     * creates a verification token, saves the user and verification entity,
+     * and sends a verification email.
+     *
+     * @param userDto DTO containing registration details
+     * @throws IllegalArgumentException if a user already exists with the given
+     *                                  email
+     */
     @Override
     @Transactional
     public void signup(RegisterUserDto userDto) {
@@ -83,6 +102,19 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         sendVerificationEmail(user, verification.getToken());
     }
 
+    /**
+     * Authenticates a user with the provided email and password.
+     * <p>
+     * Validates that the user exists, checks if the account is verified,
+     * performs authentication, retrieves associated allergies,
+     * and returns a {@link LoginResponse} containing a JWT token and user details.
+     *
+     * @param loginUserDto DTO containing login credentials (email and password)
+     * @return {@link LoginResponse} containing JWT token, expiration, and user
+     *         details
+     * @throws IllegalArgumentException if the user does not exist or account is not
+     *                                  verified
+     */
     @Override
     @Transactional
     public LoginResponse login(LoginUserDto loginUserDto) {
@@ -101,33 +133,46 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                         loginUserDto.getEmail(),
                         loginUserDto.getPassword()));
 
+        // Retrieve all allergy associations for the given user
+        var allergyList = userAllergyRepository.findByUser(user);
+
         // Generate a new user response
         LoginResponse response = new LoginResponse();
         response.setToken(jwtService.generateToken(user));
         response.setExpiresIn(86400000);
-        response.setUser(UserMapper.mapUserWithAllDetails(user));
+        response.setUser(UserMapper.mapUserWithAllDetails(user, allergyList));
         return response;
     }
 
+    /**
+     * Verifies a user's account using a token, enabling the user if valid and
+     * returning a JWT login response.
+     *
+     * @param verifyUserDto DTO with email and verification token
+     * @return LoginResponse containing JWT token and user info
+     * @throws ResponseStatusException  if user not found
+     * @throws IllegalArgumentException if token is invalid, expired, already used,
+     *                                  or not for email verification
+     */
     @Override
     @Transactional
     public LoginResponse verifyUser(VerifyUserDto verifyUserDto) {
         // Check if a user exists with the provided email
-        Optional<User> optionalUser = userRepository.findByEmail(verifyUserDto.getEmail());
-        if (optionalUser.isEmpty()) {
-            throw new IllegalArgumentException("User not found.");
-        }
-
-        User user = optionalUser.get();
+        var user = userRepository
+                .findByEmail(verifyUserDto.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         // Check if token exists
-        Optional<UserVerification> optionalVerification = userVerificationRepository
-                .findByToken(verifyUserDto.getToken());
-        if (optionalVerification.isEmpty()) {
-            throw new IllegalArgumentException("The verification token you provided does not exist or is invalid.");
-        }
+        var verification = userVerificationRepository
+                .findByToken(verifyUserDto.getToken())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Verification failed: the token provided does not exist or is invalid."));
 
-        UserVerification verification = optionalVerification.get();
+        // Check if the token type matches
+        if (verification.getType() != VerificationType.EMAIL) {
+            throw new IllegalArgumentException(
+                    "Verification failed: the token provided is not valid for email verification.");
+        }
 
         // Check if token expired
         if (verification.getExpiryDate().isBefore(LocalDateTime.now())) {
@@ -151,20 +196,27 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         LoginResponse response = new LoginResponse();
         response.setToken(jwtService.generateToken(user));
         response.setExpiresIn(86400000);
-        response.setUser(UserMapper.mapUserWithAllDetails(user));
+        response.setUser(UserMapper.mapUserWithAllDetails(user, List.of()));
         return response;
     }
 
+    /**
+     * Generates a new email verification token for a user if no active token
+     * exists.
+     *
+     * @param email the email of the user requesting a new verification token
+     * @throws ResponseStatusException  if the user is not found
+     * @throws IllegalArgumentException if the account is already verified or an
+     *                                  active token exists
+     * @throws RuntimeException         if generating or sending the new token fails
+     */
     @Override
     @Transactional
     public void resetVerificationCode(String email) {
         // Check if a user exists with the provided email
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isEmpty()) {
-            throw new IllegalArgumentException("User not found.");
-        }
-
-        User user = optionalUser.get();
+        var user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (user.isEnabled()) {
             throw new IllegalArgumentException("This account has already been verified. No further action is needed.");

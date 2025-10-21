@@ -21,11 +21,13 @@ import java.io.IOException;
 @Log4j2
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(HandlerExceptionResolver handlerExceptionResolver, JwtService jwtService,
+    public JwtAuthenticationFilter(HandlerExceptionResolver handlerExceptionResolver,
+            JwtService jwtService,
             UserDetailsService userDetailsService) {
         this.handlerExceptionResolver = handlerExceptionResolver;
         this.jwtService = jwtService;
@@ -39,18 +41,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getServletPath();
-
-        // Log incoming request
         log.debug("Incoming request: {} {}", request.getMethod(), path);
 
         // Skip public endpoints
         if (path.startsWith("/api/auth") || path.startsWith("/api/recipe")) {
-            log.trace("Skipping JWT filter for public endpoint: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Check Authorization header
         final String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.warn("Missing or invalid Authorization header for path: {}", path);
@@ -60,26 +58,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             final String jwt = authHeader.substring(7);
-            final String userEmail = jwtService.extractUsername(jwt);
-            log.debug("Extracted user email from JWT: {}", userEmail);
+            final String username = jwtService.extractUsername(jwt); // JWT subject = username
+            log.debug("Extracted username from JWT: {}", username);
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            if (userEmail != null && authentication == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+            if (username != null && authentication == null) {
+                // Load user by username (matches DB username field)
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    log.info("Authenticated user: {}", userEmail);
+                    log.info("Authenticated user: {}", username);
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
                             null, userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
-                    log.warn("Invalid JWT for user: {}", userEmail);
+                    log.warn("Invalid JWT for user: {}", username);
                 }
             }
 
             filterChain.doFilter(request, response);
+
         } catch (Exception e) {
             log.error("JWT authentication error: {}", e.getMessage());
             handlerExceptionResolver.resolveException(request, response, null, e);

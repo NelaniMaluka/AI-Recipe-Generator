@@ -15,6 +15,6 @@ public class VerifyUserDto {
     private String email;
 
     @NotBlank(message = "Token must not be blank")
-    @Pattern(regexp = "\\d{6}", message = "Token must be a 6-digit number")
+    @Pattern(regexp = "\\d{6,7}", message = "Token must be a 6 or 7-digit number")
     private String token;
 }

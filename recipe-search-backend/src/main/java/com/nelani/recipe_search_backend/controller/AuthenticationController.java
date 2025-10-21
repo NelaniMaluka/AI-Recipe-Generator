@@ -8,6 +8,7 @@ import com.nelani.recipe_search_backend.service.AuthenticationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,8 @@ public class AuthenticationController {
     @PostMapping("/signup")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterUserDto registerUserDto) {
         authService.signup(registerUserDto);
-        return ResponseEntity.ok("We have sent a verification email to your account. Please authenticate your email.");
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body("We have sent a verification email to your account. Please authenticate your email.");
     }
 
     @PostMapping("/login")
