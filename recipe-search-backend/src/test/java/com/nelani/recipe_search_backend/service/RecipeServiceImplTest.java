@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
-public class RecipeServiceTest {
+public class RecipeServiceImplTest {
 
     @Mock
     private RecipeRepository recipeRepository;

@@ -80,21 +80,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setEmail(userDto.getEmail());
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
-        // Generate the username for the user
-        String username;
+        // Generate the publicId for the user
+        String publicId;
         do {
             int randomNumber = ThreadLocalRandom.current().nextInt(10000000, 100000000);
-            username = "user-" + randomNumber;
-        } while (userRepository.existsByUsername(username));
+            publicId = "user-" + randomNumber;
+        } while (userRepository.existsByUsername(publicId));
 
-        user.setUsername(username);
+        user.setPublicId(publicId);
 
         // Generate new verification entity
-        UserVerification verification = new UserVerification();
-        verification.setToken(generateVerificationCode());
-        verification.setExpiryDate(LocalDateTime.now().plusMinutes(15));
-        verification.setType(VerificationType.EMAIL);
-        verification.setUser(user);
+        UserVerification verification = UserVerification.builder()
+                .token(generateVerificationCode())
+                .type(VerificationType.EMAIL)
+                .user(user)
+                .build();
 
         // Save and send the verification email
         userRepository.save(user);
@@ -137,11 +137,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         var allergyList = userAllergyRepository.findByUser(user);
 
         // Generate a new user response
-        LoginResponse response = new LoginResponse();
-        response.setToken(jwtService.generateToken(user));
-        response.setExpiresIn(86400000);
-        response.setUser(UserMapper.mapUserWithAllDetails(user, allergyList));
-        return response;
+        return LoginResponse.builder()
+                .token(jwtService.generateToken(user))
+                .expiresIn(86400000)
+                .user(UserMapper.mapUserWithAllDetails(user, allergyList)).build();
     }
 
     /**
@@ -192,12 +191,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userRepository.save(user);
         userVerificationRepository.save(verification);
 
-        // Generate a new response
-        LoginResponse response = new LoginResponse();
-        response.setToken(jwtService.generateToken(user));
-        response.setExpiresIn(86400000);
-        response.setUser(UserMapper.mapUserWithAllDetails(user, List.of()));
-        return response;
+        // Generate a new user response
+        return LoginResponse.builder()
+                .token(jwtService.generateToken(user))
+                .expiresIn(86400000)
+                .user(UserMapper.mapUserWithAllDetails(user, List.of())).build();
     }
 
     /**
@@ -223,7 +221,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         // Checks if there isn't any active tokens?
-        Optional<UserVerification> optionalVerification = user.getVerifications().stream()
+        List<UserVerification> userVerificationList = userVerificationRepository.findByUser(user);
+        Optional<UserVerification> optionalVerification = userVerificationList.stream()
                 .filter(v -> v.getExpiryDate().isAfter(LocalDateTime.now()))
                 .findFirst();
         if (optionalVerification.isPresent()) {
@@ -232,12 +231,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         try {
-            // Create a new verification entity
-            UserVerification verification = new UserVerification();
-            verification.setToken(generateVerificationCode());
-            verification.setExpiryDate(LocalDateTime.now().plusMinutes(15));
-            verification.setType(VerificationType.EMAIL);
-            verification.setUser(user);
+            // Generate new verification entity
+            UserVerification verification = UserVerification.builder()
+                    .token(generateVerificationCode())
+                    .type(VerificationType.EMAIL)
+                    .user(user)
+                    .build();
 
             // Save the changes
             userVerificationRepository.save(verification);

@@ -10,8 +10,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.ArrayList;
-
 @DataJpaTest
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 @ActiveProfiles("test")
@@ -28,9 +26,8 @@ public class UserRepositoryTest {
                 .firstname("firstname")
                 .lastname("lastname")
                 .email("test-email@test.co.za")
-                .username("username")
+                .publicId("publicId")
                 .password("Password@123")
-                .verifications(new ArrayList<>())
                 .build();
     }
 
@@ -45,7 +42,7 @@ public class UserRepositoryTest {
         User response = optionalUser.get();
         Assertions.assertThat(response.getFirstname()).isEqualTo("firstname");
         Assertions.assertThat(response.getLastname()).isEqualTo("lastname");
-        Assertions.assertThat(response.getUsername()).isEqualTo("username");
+        Assertions.assertThat(response.getUsername()).isEqualTo("test-email@test.co.za");
         Assertions.assertThat(response.getPassword()).isEqualTo("Password@123");
 
     }
@@ -56,7 +53,7 @@ public class UserRepositoryTest {
         userRepository.save(user);
 
         // Asset
-        var result = userRepository.existsByUsername("username");
+        var result = userRepository.existsByUsername("test-email@test.co.za");
         Assertions.assertThat(result).isTrue();
     }
 }

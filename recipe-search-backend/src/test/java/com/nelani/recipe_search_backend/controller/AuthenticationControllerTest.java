@@ -27,121 +27,118 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 public class AuthenticationControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private AuthenticationService authenticationService;
+        @MockitoBean
+        private AuthenticationService authenticationService;
 
-    @MockitoBean
-    private JwtService jwtService;
+        @MockitoBean
+        private JwtService jwtService;
 
-    @Test
-    public void AuthenticationController_Register_ReturnsString() throws Exception {
-        // Arrange
-        doNothing().when(authenticationService).signup(any(RegisterUserDto.class));
+        @Test
+        public void AuthenticationController_Register_ReturnsString() throws Exception {
+                // Arrange
+                doNothing().when(authenticationService).signup(any(RegisterUserDto.class));
 
-        // Act
-        var response = mockMvc.perform(post("/api/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "firstname": "firstname",
-                                  "lastname": "lastname",
-                                  "email": "test-email@test.co.za",
-                                  "password": "Password@123"
-                                }
-                                """));
+                // Act
+                var response = mockMvc.perform(post("/api/auth/signup")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                  "firstname": "firstname",
+                                                  "lastname": "lastname",
+                                                  "email": "test-email@test.co.za",
+                                                  "password": "Password@123"
+                                                }
+                                                """));
 
-        // Assert
-        response.andExpect(status().isOk())
-                .andExpect(content().string(
-                        "We have sent a verification email to your account. Please authenticate your email."
-                ));
-    }
+                // Assert
+                response.andExpect(status().isCreated())
+                                .andExpect(content().string(
+                                                "We have sent a verification email to your account. Please authenticate your email."));
+        }
 
-    @Test
-    public void AuthenticationController_Login_ReturnsLoginResponse() throws Exception {
-        // Arrange
-        UserResponse userResponse = UserResponse.builder()
-                .firstname("firstname")
-                .lastname("lastname")
-                .build();
+        @Test
+        public void AuthenticationController_Login_ReturnsLoginResponse() throws Exception {
+                // Arrange
+                UserResponse userResponse = UserResponse.builder()
+                                .firstname("firstname")
+                                .lastname("lastname")
+                                .build();
 
-        LoginResponse loginResponse = LoginResponse.builder()
-                .token("token")
-                .expiresIn(1000)
-                .user(userResponse)
-                .build();
+                LoginResponse loginResponse = LoginResponse.builder()
+                                .token("token")
+                                .expiresIn(1000)
+                                .user(userResponse)
+                                .build();
 
-        when(authenticationService.login(any(LoginUserDto.class))).thenReturn(loginResponse);
+                when(authenticationService.login(any(LoginUserDto.class))).thenReturn(loginResponse);
 
-        // Act
-        var response = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                                {
-                                  "email": "test-email@test.co.za",
-                                  "password": "Password@123"
-                                }
-                                """));
+                // Act
+                var response = mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                  "email": "test-email@test.co.za",
+                                                  "password": "Password@123"
+                                                }
+                                                """));
 
-        // Assert
-        response.andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("token"))
-                .andExpect(jsonPath("$.expiresIn").value(1000))
-                .andExpect(jsonPath("$.user.firstname").value("firstname"))
-                .andExpect(jsonPath("$.user.lastname").value("lastname"));
-    }
+                // Assert
+                response.andExpect(status().isOk())
+                                .andExpect(jsonPath("$.token").value("token"))
+                                .andExpect(jsonPath("$.expiresIn").value(1000))
+                                .andExpect(jsonPath("$.user.firstname").value("firstname"))
+                                .andExpect(jsonPath("$.user.lastname").value("lastname"));
+        }
 
-    @Test
-    public void AuthenticationController_Verify_ReturnsLoginResponse() throws Exception {
-        // Arrange
-        UserResponse userResponse = UserResponse.builder()
-                .firstname("firstname")
-                .lastname("lastname")
-                .build();
+        @Test
+        public void AuthenticationController_Verify_ReturnsLoginResponse() throws Exception {
+                // Arrange
+                UserResponse userResponse = UserResponse.builder()
+                                .firstname("firstname")
+                                .lastname("lastname")
+                                .build();
 
-        LoginResponse loginResponse = LoginResponse.builder()
-                .token("token")
-                .expiresIn(1000)
-                .user(userResponse)
-                .build();
+                LoginResponse loginResponse = LoginResponse.builder()
+                                .token("token")
+                                .expiresIn(1000)
+                                .user(userResponse)
+                                .build();
 
-        when(authenticationService.verifyUser(any(VerifyUserDto.class))).thenReturn(loginResponse);
+                when(authenticationService.verifyUser(any(VerifyUserDto.class))).thenReturn(loginResponse);
 
-        // Act
-        var response = mockMvc.perform(post("/api/auth/verify")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                            {
-                              "token": "123456",
-                              "email": "test-email@test.co.za"
-                            }
-                            """));
+                // Act
+                var response = mockMvc.perform(post("/api/auth/verify")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {
+                                                  "token": "123456",
+                                                  "email": "test-email@test.co.za"
+                                                }
+                                                """));
 
-        // Assert
-        response.andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("token"))
-                .andExpect(jsonPath("$.expiresIn").value(1000))
-                .andExpect(jsonPath("$.user.firstname").value("firstname"))
-                .andExpect(jsonPath("$.user.lastname").value("lastname"));
-    }
+                // Assert
+                response.andExpect(status().isOk())
+                                .andExpect(jsonPath("$.token").value("token"))
+                                .andExpect(jsonPath("$.expiresIn").value(1000))
+                                .andExpect(jsonPath("$.user.firstname").value("firstname"))
+                                .andExpect(jsonPath("$.user.lastname").value("lastname"));
+        }
 
-    @Test
-    public void AuthenticationController_ResetVerification_ReturnsString() throws Exception {
-        // Arrange
-        doNothing().when(authenticationService).resetVerificationCode(any(String.class));
+        @Test
+        public void AuthenticationController_ResetVerification_ReturnsString() throws Exception {
+                // Arrange
+                doNothing().when(authenticationService).resetVerificationCode(any(String.class));
 
-        // Act
-        var response = mockMvc.perform(post("/api/auth/reset-verification")
-                .param("email", "malukanelani@gmail.com"));
+                // Act
+                var response = mockMvc.perform(post("/api/auth/reset-verification")
+                                .param("email", "malukanelani@gmail.com"));
 
-        // Assert
-        response.andExpect(status().isOk())
-                .andExpect(content().string(
-                        "Successfully sent a new verification code."
-                ));
-    }
+                // Assert
+                response.andExpect(status().isOk())
+                                .andExpect(content().string(
+                                                "Successfully sent a new verification code."));
+        }
 }
-

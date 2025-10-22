@@ -2,8 +2,10 @@ package com.nelani.recipe_search_backend.service;
 
 import com.nelani.recipe_search_backend.dto.UserDto;
 import com.nelani.recipe_search_backend.model.User;
+import com.nelani.recipe_search_backend.repository.PasswordResetRepository;
 import com.nelani.recipe_search_backend.repository.UserAllergyRepository;
 import com.nelani.recipe_search_backend.repository.UserRepository;
+import com.nelani.recipe_search_backend.repository.UserVerificationRepository;
 import com.nelani.recipe_search_backend.response.UserResponse;
 import com.nelani.recipe_search_backend.security.JwtService;
 import com.nelani.recipe_search_backend.sockets.UserSocket;
@@ -37,6 +39,12 @@ public class UserServiceImplTest {
     private UserAllergyRepository userAllergyRepository;
 
     @Mock
+    private UserVerificationRepository userVerificationRepository;
+
+    @Mock
+    private PasswordResetRepository passwordResetRepository;
+
+    @Mock
     private JwtService jwtService;
 
     @Mock
@@ -53,20 +61,19 @@ public class UserServiceImplTest {
                 .firstname("firstname")
                 .lastname("lastname")
                 .email("test-email@test.co.za")
-                .username("username")
                 .password("Password@123")
-                .verifications(new ArrayList<>())
                 .build();
     }
 
     @Test
     public void UserService_GetCurrentUser_ReturnsUserResponse() {
         // Arrange: set up dummy authentication
-        Authentication auth = new UsernamePasswordAuthenticationToken(user.getUsername(), null, new ArrayList<>());
+        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         // Stub DB calls
-        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(user.getEmail()))
+                .thenReturn(Optional.of(user));
         when(userAllergyRepository.findByUser(user)).thenReturn(new ArrayList<>());
 
         // Act
@@ -81,11 +88,11 @@ public class UserServiceImplTest {
     @Test
     public void UserService_UpdateUserDetails_ReturnsUserResponse() {
         // Arrange: set up dummy authentication
-        Authentication auth = new UsernamePasswordAuthenticationToken(user.getUsername(), null, new ArrayList<>());
+        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         // Stub DB calls
-        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(userAllergyRepository.findByUser(user)).thenReturn(new ArrayList<>());
         when(jwtService.generateToken(user)).thenReturn("token");
         doNothing().when(userSocket).sendUpdatedUser(any(UserResponse.class));
@@ -109,10 +116,13 @@ public class UserServiceImplTest {
     @Test
     public void UserService_DeleteUser_DeletesUserSuccessfully() {
         // Arrange
-        Authentication auth = new UsernamePasswordAuthenticationToken(user.getUsername(), null, new ArrayList<>());
+        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordResetRepository.deleteByUser(any(User.class))).thenReturn(0);
+        when(userAllergyRepository.deleteByUser(any(User.class))).thenReturn(0);
+        when(userVerificationRepository.deleteByUser(any(User.class))).thenReturn(0);
 
         // Act
         userService.deleteUser();

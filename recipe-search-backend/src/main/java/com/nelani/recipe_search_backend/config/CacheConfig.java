@@ -12,41 +12,41 @@ import java.time.Duration;
 @EnableCaching
 public class CacheConfig {
 
-    @Bean
-    public CaffeineCacheManager cacheManager() {
-        // No names in constructor → global/default cache applies to any cache name
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+        @Bean
+        public CaffeineCacheManager cacheManager() {
+                // No names in constructor → global/default cache applies to any cache name
+                CaffeineCacheManager cacheManager = new CaffeineCacheManager();
 
-        // Set default cache spec (30 days TTL, 1000 max entries)
-        cacheManager.setCaffeine(Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofDays(30))
-                .maximumSize(1500));
+                // Set default cache spec (30 days TTL, 1500 max entries)
+                cacheManager.setCaffeine(Caffeine.newBuilder()
+                                .expireAfterWrite(Duration.ofDays(30))
+                                .maximumSize(1500));
 
-        // Register caches with custom TTLs
-        cacheManager.registerCustomCache("AI recipes", Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofDays(1))
-                .maximumSize(500)
-                .build());
+                // Register caches with custom TTLs
+                cacheManager.registerCustomCache("AI recipes", Caffeine.newBuilder()
+                                .expireAfterWrite(Duration.ofDays(1))
+                                .maximumSize(500)
+                                .build());
 
-        // Register caches with custom TTLs
-        cacheManager.registerCustomCache("recipes", Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofDays(1))
-                .maximumSize(500)
-                .build());
+                // Register caches with custom TTLs
+                cacheManager.registerCustomCache("recipes", Caffeine.newBuilder()
+                                .expireAfterWrite(Duration.ofDays(1))
+                                .maximumSize(500)
+                                .build());
 
-        // Register caches with custom TTLs
-        cacheManager.registerCustomCache("meal-types", Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofDays(7))
-                .maximumSize(500)
-                .build());
+                // Register caches with custom TTLs
+                cacheManager.registerCustomCache("meal-types", Caffeine.newBuilder()
+                                .expireAfterWrite(Duration.ofDays(7))
+                                .maximumSize(500)
+                                .build());
 
-        // Register caches with custom TTLs
-        cacheManager.registerCustomCache("date-filters", Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofDays(7))
-                .maximumSize(500)
-                .build());
+                // Register caches with custom TTLs
+                cacheManager.registerCustomCache("date-filters", Caffeine.newBuilder()
+                                .expireAfterWrite(Duration.ofDays(7))
+                                .maximumSize(500)
+                                .build());
 
-        return cacheManager;
-    }
+                return cacheManager;
+        }
 
 }

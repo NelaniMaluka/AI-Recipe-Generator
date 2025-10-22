@@ -13,6 +13,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "user_allergy")
 public class UserAllergy {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

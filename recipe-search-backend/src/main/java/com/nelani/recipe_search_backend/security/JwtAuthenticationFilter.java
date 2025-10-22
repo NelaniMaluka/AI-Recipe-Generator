@@ -44,7 +44,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.debug("Incoming request: {} {}", request.getMethod(), path);
 
         // Skip public endpoints
-        if (path.startsWith("/api/auth") || path.startsWith("/api/recipe")) {
+        if (path.startsWith("/api/auth") || path.startsWith("/api/recipe")
+                || path.startsWith("/api/password/reset/**")) {
             filterChain.doFilter(request, response);
             return;
         }

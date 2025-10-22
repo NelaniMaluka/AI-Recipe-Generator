@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +37,9 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(unique = true, nullable = false)
+    private String publicId;
+
     @NotBlank(message = "Email must not be blank")
     @Email(message = "Email should be valid")
     @Column(unique = true, nullable = false)
@@ -49,10 +51,6 @@ public class User implements UserDetails {
     @Builder.Default
     @Column(nullable = false)
     private boolean enabled = false;
-
-    @Builder.Default
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserVerification> verifications = new ArrayList<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -79,9 +77,10 @@ public class User implements UserDetails {
         return enabled;
     }
 
-    @Override
-    public String getUsername() {
-        return this.username;
+    @PrePersist
+    @PreUpdate
+    public void syncUsernameWithEmail() {
+        this.username = this.email;
     }
 
 }

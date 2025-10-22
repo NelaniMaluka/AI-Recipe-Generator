@@ -41,9 +41,8 @@ public class UserAllergyRepositoryTest {
                                 .firstname("firstname")
                                 .lastname("lastname")
                                 .email("test-email@test.co.za")
-                                .username("username")
+                                .publicId("publicId")
                                 .password("Password@123")
-                                .verifications(new ArrayList<>())
                                 .build();
 
                 allergy = Allergy.builder()
@@ -97,13 +96,27 @@ public class UserAllergyRepositoryTest {
                 Assertions.assertThat(resultList)
                                 .hasSize(2) // ensures there are exactly 2 entries
                                 .allSatisfy(ua -> Assertions.assertThat(ua.getUser()).isEqualTo(user)); // all entries
-                                                                                                        // have correct
-                                                                                                        // user
 
                 // Optionally, assert the allergies match expected ones
                 Assertions.assertThat(resultList)
                                 .extracting(UserAllergy::getAllergy)
                                 .containsExactlyInAnyOrder(allergy, allergy2);
+        }
+
+        @Test
+        public void UserAllergyRepository_DeleteByUser_RemovesRecords() {
+                // Arrange
+                userAllergyRepository.save(userAllergy);
+
+                // Assert it's saved
+                Assertions.assertThat(userAllergyRepository.findByUser(user)).hasSize(1);
+
+                // Act - Delete
+                int rowsDeleted = userAllergyRepository.deleteByUser(user);
+
+                // Assert row is deleted
+                Assertions.assertThat(rowsDeleted).isEqualTo(1);
+                Assertions.assertThat(userAllergyRepository.findByUser(user)).isEmpty();
         }
 
 }

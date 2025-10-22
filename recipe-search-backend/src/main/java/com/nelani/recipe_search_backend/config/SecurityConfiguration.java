@@ -20,40 +20,43 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfiguration {
 
-    private final AuthenticationProvider authenticationProvider;
-    private final JwtAuthenticationFilter authenticationFilter;
+        private final AuthenticationProvider authenticationProvider;
+        private final JwtAuthenticationFilter authenticationFilter;
 
-    public SecurityConfiguration(AuthenticationProvider authenticationProvider,
-            JwtAuthenticationFilter authenticationFilter) {
-        this.authenticationProvider = authenticationProvider;
-        this.authenticationFilter = authenticationFilter;
-    }
+        public SecurityConfiguration(AuthenticationProvider authenticationProvider,
+                        JwtAuthenticationFilter authenticationFilter) {
+                this.authenticationProvider = authenticationProvider;
+                this.authenticationFilter = authenticationFilter;
+        }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**", "/api/recipe/**").permitAll()
-                        .anyRequest().authenticated())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider)
-                .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(AbstractHttpConfigurer::disable)
+                                .authorizeHttpRequests(authorize -> authorize
+                                                .requestMatchers("/api/auth/**", "/api/recipe/**",
+                                                                "/api/password/reset/**")
+                                                .permitAll()
+                                                .anyRequest().authenticated())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authenticationProvider(authenticationProvider)
+                                .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration
-                .setAllowedOrigins(List.of("https://ai-recipe-generator-5rbk.onrender.com", "http://localhost:8080"));
-        corsConfiguration.setAllowedMethods(List.of("GET, POST, PUT, DELETE"));
-        corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration corsConfiguration = new CorsConfiguration();
+                corsConfiguration
+                                .setAllowedOrigins(List.of("https://ai-recipe-generator-5rbk.onrender.com",
+                                                "http://localhost:8080"));
+                corsConfiguration.setAllowedMethods(List.of("GET, POST, PUT, DELETE"));
+                corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfiguration);
-        return source;
-    }
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", corsConfiguration);
+                return source;
+        }
 }
