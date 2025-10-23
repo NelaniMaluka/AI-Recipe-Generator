@@ -50,6 +50,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Skip documentation
+        if (path.startsWith("/v2/api-docs") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             log.warn("Missing or invalid Authorization header for path: {}", path);

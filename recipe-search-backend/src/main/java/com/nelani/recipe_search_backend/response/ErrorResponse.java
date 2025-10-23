@@ -1,5 +1,6 @@
 package com.nelani.recipe_search_backend.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,7 +8,12 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "Standard error response for API failures")
 public class ErrorResponse {
-    private String error;
-    private String message;
+
+        @Schema(description = "Short error code or type", example = "INVALID_REQUEST")
+        private String error;
+
+        @Schema(description = "Detailed error message explaining the issue", example = "The provided email address is invalid.")
+        private String message;
 }
