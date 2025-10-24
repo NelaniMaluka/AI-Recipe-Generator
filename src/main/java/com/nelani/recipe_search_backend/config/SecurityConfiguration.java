@@ -51,6 +51,7 @@ public class SecurityConfiguration {
                                                                 "https://ai-recipe-generator-5rbk.onrender.com/api/auth/oauth-info/success",
                                                                 true)
                                                 .failureUrl("https://ai-recipe-generator-5rbk.onrender.com/api/auth/failure"))
+                                .cors(Customizer.withDefaults())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authenticationProvider(authenticationProvider)
@@ -59,17 +60,4 @@ public class SecurityConfiguration {
                 return http.build();
         }
 
-        @Bean
-        public CorsConfigurationSource corsConfigurationSource() {
-                CorsConfiguration corsConfiguration = new CorsConfiguration();
-                corsConfiguration
-                                .setAllowedOrigins(List.of("https://ai-recipe-generator-5rbk.onrender.com",
-                                                "http://localhost:8080"));
-                corsConfiguration.setAllowedMethods(List.of("GET, POST, PUT, DELETE"));
-                corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-
-                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-                source.registerCorsConfiguration("/**", corsConfiguration);
-                return source;
-        }
 }
