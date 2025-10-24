@@ -5,14 +5,14 @@ permissions:
 on:
   push:
     branches:
-      - main        # Trigger workflow on push to main branch
+      - main # Trigger workflow on push to main branch
   pull_request:
     branches:
-      - main        # Trigger workflow on PRs targeting main
+      - main # Trigger workflow on PRs targeting main
 
 jobs:
   test-backend:
-    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
 
     steps:
       # Step 1: Checkout source code
@@ -44,26 +44,3 @@ jobs:
       - name: Build backend JAR
         run: |
           mvn clean package -DskipTests
-
-      # Step 6: Check if deployed backend is responding with HTTP 200
-      # Tries up to 10 times, waiting 30 seconds each time (~5 min max)
-      - name: Check backend health
-        run: |
-          for i in {1..10}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://ai-recipe-generator-5rbk.onrender.com/actuator/health)
-            if [ "$STATUS" -eq 200 ]; then
-              echo "Backend is healthy"
-              exit 0
-            fi
-            echo "Waiting for backend..."
-            sleep 30
-          done
-          echo "Backend failed health check"
-          exit 1    # Mark the job as failed if health check fails
-
-      # Step 7: Rollback deployment if any previous step (e.g., health check) failed
-      - name: Rollback previous deployment
-        if: failure()
-        run: |
-          curl -X POST "https://api.render.com/services/srv-srv-d2g84b75r7bs73eopdn0/rollback" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
