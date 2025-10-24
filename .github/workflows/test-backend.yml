@@ -1,38 +1,69 @@
 name: Backend Tests
 permissions:
-    contents: read
+  contents: read
 
 on:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
+  push:
+    branches:
+      - main        # Trigger workflow on push to main branch
+  pull_request:
+    branches:
+      - main        # Trigger workflow on PRs targeting main
 
 jobs:
-    test-backend:
-        runs-on: ubuntu-latest
+  test-backend:
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v3
+    steps:
+      # Step 1: Checkout source code
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-            - name: Set up JDK 17
-              uses: actions/setup-java@v3
-              with:
-                  distribution: temurin
-                  java-version: 17
+      # Step 2: Set up Java 17 (Temurin distribution)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
 
-            - name: Cache Maven dependencies
-              uses: actions/cache@v3
-              with:
-                  path: ~/.m2/repository
-                  key: ${{ runner.os }}-maven-${{ hashFiles('recipe-search-backend/pom.xml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-maven-
+      # Step 3: Cache Maven dependencies to speed up future builds
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
-            - name: Build and run backend tests
-              run: |
-                  cd recipe-search-backend
-                  mvn clean test -Dspring.profiles.active=test
+      # Step 4: Run tests using the 'test' Spring profile
+      - name: Build and run backend tests
+        run: |
+          mvn clean test -Dspring.profiles.active=test
+
+      # Step 5: Build the application JAR (skip tests since they already ran)
+      - name: Build backend JAR
+        run: |
+          mvn clean package -DskipTests
+
+      # Step 6: Check if deployed backend is responding with HTTP 200
+      # Tries up to 10 times, waiting 30 seconds each time (~5 min max)
+      - name: Check backend health
+        run: |
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://ai-recipe-generator-5rbk.onrender.com/actuator/health)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Backend is healthy"
+              exit 0
+            fi
+            echo "Waiting for backend..."
+            sleep 30
+          done
+          echo "Backend failed health check"
+          exit 1    # Mark the job as failed if health check fails
+
+      # Step 7: Rollback deployment if any previous step (e.g., health check) failed
+      - name: Rollback previous deployment
+        if: failure()
+        run: |
+          curl -X POST "https://api.render.com/services/srv-srv-d2g84b75r7bs73eopdn0/rollback" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
