@@ -48,4 +48,20 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Request email change", description = "Sends a verification token to the new email address for confirmation.")
+    @ApiResponse(responseCode = "200", description = "Verification email sent successfully")
+    @PostMapping("/update-email-request")
+    public ResponseEntity<?> updateEmailRequest(@RequestParam String newEmail) {
+        userService.changeEmailRequest(newEmail);
+        return ResponseEntity.ok().body("Verification email sent successfully to " + newEmail);
+    }
+
+    @Operation(summary = "Verify email change", description = "Verifies the token and updates the user's email.")
+    @ApiResponse(responseCode = "200", description = "Email updated successfully")
+    @PostMapping("/verify-email-change")
+    public ResponseEntity<LoginResponse> verifyEmailChangeRequest(@RequestParam String token) {
+        LoginResponse response = userService.verifyChangeEmailRequest(token);
+        return ResponseEntity.ok(response);
+    }
+
 }

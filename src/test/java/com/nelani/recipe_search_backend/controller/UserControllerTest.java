@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -153,6 +151,59 @@ public class UserControllerTest {
 
                 // Assert
                 response.andExpect(status().isNoContent());
+        }
+
+        @Test
+        public void UserController_UpdateEmailRequest_Returns200() throws Exception {
+                // Arrange
+                String newEmail = "test-email@test123.co.za";
+                doNothing().when(userService).changeEmailRequest(newEmail);
+
+                // Act & Assert
+                mockMvc.perform(post("/api/user/update-email-request")
+                                .param("newEmail", newEmail)
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(content().string("Verification email sent successfully to " + newEmail));
+
+                // Verify service method was called
+                verify(userService, times(1)).changeEmailRequest(newEmail);
+        }
+
+        @Test
+        public void UserController_VerifyEmailChange_Returns200() throws Exception {
+                // Arrange
+                String token = "7439349";
+
+                UserResponse user = UserResponse.builder()
+                                .firstname("firstname")
+                                .lastname("lastname")
+                                .email("test-email@test.co.za")
+                                .publicId("PublicId")
+                                .allergies(new ArrayList<>())
+                                .build();
+
+                LoginResponse loginResponse = LoginResponse.builder()
+                                .token("token")
+                                .expiresIn(1000)
+                                .user(user)
+                                .build();
+
+                when(userService.verifyChangeEmailRequest(token)).thenReturn(loginResponse);
+
+                // Act & Assert
+                mockMvc.perform(post("/api/user/verify-email-change")
+                                .param("token", token)
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.token").value("token"))
+                                .andExpect(jsonPath("$.expiresIn").value(1000))
+                                .andExpect(jsonPath("$.user.email").value("test-email@test.co.za"))
+                                .andExpect(jsonPath("$.user.firstname").value("firstname"))
+                                .andExpect(jsonPath("$.user.lastname").value("lastname"));
+
+                // Verify service method was called once
+                verify(userService, times(1)).verifyChangeEmailRequest(token);
         }
 
 }

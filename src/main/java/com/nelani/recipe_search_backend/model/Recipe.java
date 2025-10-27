@@ -64,6 +64,7 @@ public class Recipe {
     private List<Step> steps;
 
     @PrePersist
+    @PreUpdate
     public void generatePublicIdAndUniqueness() {
         // Public ID
         if (this.publicId == null || this.publicId.isBlank()) {

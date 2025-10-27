@@ -74,7 +74,7 @@ public class PasswordResetServiceImplTest {
 
         // Assert
         verify(emailService, times(1))
-                .sendEmail(Mockito.eq(email), Mockito.anyString(), Mockito.anyString());
+                .sendPasswordResetEmail(Mockito.eq(email), Mockito.anyString());
     }
 
     @Test

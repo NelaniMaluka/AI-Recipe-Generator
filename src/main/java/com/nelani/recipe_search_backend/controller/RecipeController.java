@@ -1,5 +1,6 @@
 package com.nelani.recipe_search_backend.controller;
 
+import com.nelani.recipe_search_backend.dto.RecipeDto;
 import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.model.DateFilter;
 import com.nelani.recipe_search_backend.model.MealType;
@@ -7,6 +8,7 @@ import com.nelani.recipe_search_backend.service.RecipeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.cache.annotation.Cacheable;
@@ -55,7 +57,7 @@ public class RecipeController {
 
         @Operation(summary = "Search recipes by keyword", description = "Returns a paginated list of recipes matching the provided search keyword.")
         @ApiResponse(responseCode = "200", description = "Recipes retrieved successfully")
-        @GetMapping
+        @GetMapping("/search")
         public ResponseEntity<?> getRecipes(
                         @RequestParam @NotBlank(message = "Search word cannot be blank") String searchWord,
                         @RequestParam(defaultValue = "0") int page,
@@ -88,4 +90,23 @@ public class RecipeController {
                 recipeService.emailRecipe(email, publicId);
                 return ResponseEntity.ok("Recipe has been successfully sent to " + email);
         }
+
+        @Operation(summary = "Update an existing recipe", description = "Updates the recipe details. All fields are required.")
+        @ApiResponse(responseCode = "200", description = "Recipe updated successfully")
+        @PutMapping("/update-recipe")
+        public ResponseEntity<?> updateRecipe(@Valid @RequestBody RecipeDto recipeDto) {
+                RecipeResponse response = recipeService.updateRecipe(recipeDto);
+                return ResponseEntity.ok(response);
+        }
+
+        @Operation(summary = "Delete a recipe", description = "Deletes the recipe with the specified public ID.")
+        @ApiResponse(responseCode = "200", description = "Recipe deleted successfully")
+        @DeleteMapping("/delete-recipe")
+        public ResponseEntity<?> deleteRecipe(
+                        @RequestParam @NotBlank(message = "Recipe Id cannot be blank") String publicId) {
+
+                recipeService.deleteRecipe(publicId);
+                return ResponseEntity.ok("Recipe with ID " + publicId + " has been successfully deleted.");
+        }
+
 }

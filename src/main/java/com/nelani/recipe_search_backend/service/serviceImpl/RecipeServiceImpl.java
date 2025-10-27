@@ -1,15 +1,16 @@
 package com.nelani.recipe_search_backend.service.serviceImpl;
 
+import com.nelani.recipe_search_backend.dto.RecipeDto;
+import com.nelani.recipe_search_backend.model.*;
 import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.mapper.RecipeMapper;
-import com.nelani.recipe_search_backend.model.DateFilter;
-import com.nelani.recipe_search_backend.model.MealType;
-import com.nelani.recipe_search_backend.model.Recipe;
 import com.nelani.recipe_search_backend.notifications.EmailService;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
 import com.nelani.recipe_search_backend.service.RecipeService;
 
+import com.nelani.recipe_search_backend.sockets.RecipeSocket;
 import com.nelani.recipe_search_backend.util.DateRangeUtil;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class RecipeServiceImpl implements RecipeService {
@@ -27,12 +27,14 @@ public class RecipeServiceImpl implements RecipeService {
         private final RecipeGenerator recipeGenerator;
         private final RecipeRepository recipeRepository;
         private final EmailService emailService;
+        private final RecipeSocket recipeSocket;
 
         public RecipeServiceImpl(RecipeGenerator recipeGenerator, RecipeRepository recipeRepository,
-                        EmailService emailService) {
+                        EmailService emailService, RecipeSocket recipeSocket) {
                 this.recipeGenerator = recipeGenerator;
                 this.recipeRepository = recipeRepository;
                 this.emailService = emailService;
+                this.recipeSocket = recipeSocket;
         }
 
         /**
@@ -135,64 +137,60 @@ public class RecipeServiceImpl implements RecipeService {
                 Recipe recipe = recipeRepository.findByPublicId(publicId)
                                 .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
 
-                String subject = "AI Recipe Generator - " + recipe.getName();
+                emailService.sendRecipeEmail(email, recipe);
+        }
 
-                // Ingredients with quantity
-                String ingredientsHtml = recipe.getIngredients().stream()
-                                .map(i -> "<li>" + i.getQuantity() + " " + i.getName() + "</li>")
-                                .collect(Collectors.joining());
+        @CacheEvict(value = "recipe", key = "#dto.publicId")
+        @Override
+        @Transactional
+        public RecipeResponse updateRecipe(RecipeDto dto) {
+                // Fetch the Recipe
+                Recipe recipe = recipeRepository.findByPublicId(dto.getPublicId())
+                                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
 
-                // Steps with estimated time
-                String stepsHtml = recipe.getSteps().stream()
-                                .map(s -> "<li>" + s.getDescription() + " (Estimated: " + s.getEstimatedMinutes()
-                                                + " min)</li>")
-                                .collect(Collectors.joining());
+                // update the fields
+                recipe.setPublicId(dto.getPublicId());
+                recipe.setName(dto.getName());
+                recipe.setImageUrl(dto.getImageUrl());
+                recipe.setMealType(dto.getMealType());
+                recipe.setCookTimeMinutes(dto.getCookTimeMinutes());
+                List<Ingredient> ingredientList = dto.getIngredients().stream()
+                                .map(ingredientDto -> Ingredient.builder()
+                                                .name(ingredientDto.getName())
+                                                .quantity(ingredientDto.getQuantity())
+                                                .recipe(recipe)
+                                                .build())
+                                .toList();
+                List<Step> stepList = dto.getSteps().stream()
+                                .map(ingredientDto -> Step.builder()
+                                                .description(ingredientDto.getDescription())
+                                                .estimatedMinutes(ingredientDto.getEstimatedMinutes())
+                                                .recipe(recipe)
+                                                .build())
+                                .toList();
 
-                String htmlContent = "<!DOCTYPE html>"
-                                + "<html lang='en'>"
-                                + "  <head>"
-                                + "    <meta charset='UTF-8' />"
-                                + "    <meta name='viewport' content='width=device-width, initial-scale=1.0' />"
-                                + "    <title>AI Recipe Generator</title>"
-                                + "  </head>"
-                                + "  <body style='font-family: Arial, sans-serif; color: #333; background: #f9f9f9; margin: 0; padding: 0;'>"
-                                + "    <div style='max-width: 500px; width: 100%; margin: auto; background: #fff'>"
-                                + "      <div style='padding: 1px 20px 0 20px'>"
-                                + "        <h2 style='margin: 20px 0'>AI Recipe Generator</h2>"
-                                + "      </div>"
-                                + "      <div style='text-align:center;'>"
-                                + "        <img src='https://ai-recipe-generator-5rbk.onrender.com/images/logo.png' alt='AI Recipe Generator Logo' "
-                                + "             style='width:100%;height:auto;display:block;margin-bottom:20px;'/>"
-                                + "      </div>"
-                                + "      <div style='padding: 0 20px 40px'>"
-                                + "        <h2 style='color: #2e86c1; margin: 40px 0 20px 0'>Hi there,</h2>"
-                                + "        <p style='line-height: 1.6'>"
-                                + "          Your custom recipe <strong>" + recipe.getName()
-                                + "</strong> has been generated by AI!"
-                                + "        </p>"
-                                + "        <p><strong>Meal Type:</strong> " + recipe.getMealType() + "</p>"
-                                + "        <p><strong>Cook Time:</strong> " + recipe.getCookTimeMinutes()
-                                + " minutes</p>"
-                                + "        <h3 style='margin-top:30px; color:#2e86c1;'>Ingredients:</h3>"
-                                + "        <ul style='line-height:1.6;'>" + ingredientsHtml + "</ul>"
-                                + "        <h3 style='margin-top:30px; color:#2e86c1;'>Steps:</h3>"
-                                + "        <ol style='line-height:1.6;'>" + stepsHtml + "</ol>"
-                                + "        <hr style='margin: 30px 0; border: none; border-top: 1px solid #ccc' />"
-                                + "        <p style='font-size: 13px; color: #666; text-align: center'>"
-                                + "          Need help? Visit our"
-                                + "          <a href='#' style='color: #2e86c1; text-decoration: none'>Help Center</a>"
-                                + "          or reply to this email."
-                                + "        </p>"
-                                + "        <p style='font-size: 12px; color: #999; text-align: center; margin-top: 15px;'>"
-                                + "          AI Recipe Generator – Where every dish is unique."
-                                + "        </p>"
-                                + "      </div>"
-                                + "    </div>"
-                                + "  </body>"
-                                + "</html>";
+                // Save the recipe
+                recipe.setIngredients(ingredientList);
+                recipe.setSteps(stepList);
 
-                // Email the recipe to the provided email
-                emailService.sendEmail(email, subject, htmlContent);
+                recipeRepository.save(recipe);
+
+                RecipeResponse response = RecipeMapper.mapRecipeWithAllDetails(recipe);
+                recipeSocket.sendSendUpdatedRecipe(response);
+
+                return response;
+        }
+
+        @Override
+        @Transactional
+        @CacheEvict(value = "recipe", key = "#publicId")
+        public void deleteRecipe(String publicId) {
+                // Fetch the Recipe
+                Recipe recipe = recipeRepository.findByPublicId(publicId)
+                                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
+
+                // Delete the recipe
+                recipeRepository.delete(recipe);
         }
 
 }

@@ -23,4 +23,8 @@ public class RecipeSocket {
                 .toList();
         messagingTemplate.convertAndSend("/topic/recipes/" + searchTerm, formattedRecipes);
     }
+
+    public void sendSendUpdatedRecipe(RecipeResponse recipe) {
+        messagingTemplate.convertAndSend("/topic/recipes/" + recipe.getPublicId(), recipe);
+    }
 }

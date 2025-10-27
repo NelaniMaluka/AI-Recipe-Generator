@@ -26,7 +26,7 @@ public class UserVerificationRepositoryTest {
         private UserRepository userRepository;
 
         @Test
-        public void UserVerificationRepository_FindByToken_ReturnOptionalUserVerification() {
+        public void UserVerificationRepository_FindByUserAndToken_ReturnOptionalUserVerification() {
                 // Arrange
                 User user = User.builder()
                                 .firstname("firstname")
@@ -49,7 +49,7 @@ public class UserVerificationRepositoryTest {
                 verificationRepository.save(userVerification);
 
                 // Assert
-                var optionalVerification = verificationRepository.findByToken("token-123");
+                var optionalVerification = verificationRepository.findByUserAndToken(user, "token-123");
                 Assertions.assertThat(optionalVerification).isPresent();
                 UserVerification result = optionalVerification.get();
                 Assertions.assertThat(result.getUser()).isEqualTo(user);

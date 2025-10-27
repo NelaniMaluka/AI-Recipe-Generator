@@ -1,5 +1,6 @@
 package com.nelani.recipe_search_backend.service;
 
+import com.nelani.recipe_search_backend.dto.RecipeDto;
 import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.model.DateFilter;
 import com.nelani.recipe_search_backend.model.MealType;
@@ -15,4 +16,8 @@ public interface RecipeService {
             DateFilter dateFilter, int page, int size);
 
     void emailRecipe(String email, String publicId);
+
+    RecipeResponse updateRecipe(RecipeDto dto);
+
+    void deleteRecipe(String publicId);
 }

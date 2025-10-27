@@ -78,7 +78,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         log.info("Password reset token generated and saved for user with email: {}", email);
 
-        sendResetEmail(email, token);
+        emailService.sendPasswordResetEmail(email, token);
         log.info("Password reset email sent to: {}", email);
     }
 
@@ -186,59 +186,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
         userRepository.save(user);
         log.info("Password successfully changed for user '{}'.", email);
-    }
-
-    /**
-     * Sends a password reset email with a verification code to the specified user
-     * email.
-     *
-     * <p>
-     * The email contains an HTML message with the reset code and instructions.
-     *
-     * @param email the recipient's email address
-     * @param token the password reset verification code
-     */
-    private void sendResetEmail(String email, String token) {
-        String subject = "AI Recipe Generator - Verification code";
-
-        String htmlContent = "<!DOCTYPE html>"
-                + "<html lang='en'>"
-                + "  <head>"
-                + "    <meta charset='UTF-8' />"
-                + "    <meta name='viewport' content='width=device-width, initial-scale=1.0' />"
-                + "    <title>Password Reset</title>"
-                + "  </head>"
-                + "  <body style='font-family: Arial, sans-serif; color: #333; background: #f9f9f9; margin: 0; padding: 0;'>"
-                + "    <div style='max-width: 500px; width: 100%; margin: auto; background: #fff; border-radius: 10px; overflow: hidden;'>"
-                + "      <div style='text-align: center; padding: 20px; background: #2e86c1; color: white;'>"
-                + "        <h2 style='margin: 0;'>AI Recipe Generator</h2>"
-                + "      </div>"
-                + "      <div style='text-align:center; padding: 20px;'>"
-                + "        <img src='https://github.com/NelaniMaluka/AI-Recipe-Generator/blob/main/recipe-search-backend/images/logo.png' alt='AI Recipe Generator Logo' "
-                + "             style='width: 120px; height: auto; margin-bottom: 20px;'/>"
-                + "      </div>"
-                + "      <div style='padding: 0 20px 40px 20px;'>"
-                + "        <h3 style='color: #2e86c1;'>Reset Your Password</h3>"
-                + "        <p style='line-height: 1.6;'>We received a request to reset your password for <strong>AI Recipe Generator</strong>. "
-                + "        Use the code below to set a new password:</p>"
-                + "        <div style='text-align: center; margin: 30px 0;'>"
-                + "          <p style='font-size: 26px; font-weight: bold; color: #2e86c1; letter-spacing: 3px;'>"
-                + "            " + token
-                + "          </p>"
-                + "        </div>"
-                + "        <p style='line-height: 1.6;'>Enter this code in the app or website to reset your password. "
-                + "        This code will expire in 30 minutes.</p>"
-                + "        <hr style='margin: 30px 0; border: none; border-top: 1px solid #ccc' />"
-                + "        <p style='font-size: 13px; color: #666; text-align: center;'>If you did not request a password reset, you can safely ignore this email.</p>"
-                + "        <p style='font-size: 12px; color: #999; text-align: center; margin-top: 15px;'>© "
-                + "            " + java.time.Year.now().getValue() + " AI Recipe Generator – All rights reserved.</p>"
-                + "      </div>"
-                + "    </div>"
-                + "  </body>"
-                + "</html>";
-
-        // Email the validation token to the provided email
-        emailService.sendEmail(email, subject, htmlContent);
     }
 
     private String generateVerificationCode() {

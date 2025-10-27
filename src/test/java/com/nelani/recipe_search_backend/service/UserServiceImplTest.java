@@ -1,12 +1,13 @@
 package com.nelani.recipe_search_backend.service;
 
 import com.nelani.recipe_search_backend.dto.UserDto;
+import com.nelani.recipe_search_backend.model.EmailVerification;
 import com.nelani.recipe_search_backend.model.Provider;
 import com.nelani.recipe_search_backend.model.User;
-import com.nelani.recipe_search_backend.repository.PasswordResetRepository;
-import com.nelani.recipe_search_backend.repository.UserAllergyRepository;
-import com.nelani.recipe_search_backend.repository.UserRepository;
-import com.nelani.recipe_search_backend.repository.UserVerificationRepository;
+import com.nelani.recipe_search_backend.model.VerificationType;
+import com.nelani.recipe_search_backend.notifications.EmailService;
+import com.nelani.recipe_search_backend.repository.*;
+import com.nelani.recipe_search_backend.response.LoginResponse;
 import com.nelani.recipe_search_backend.response.UserResponse;
 import com.nelani.recipe_search_backend.security.JwtService;
 import com.nelani.recipe_search_backend.sockets.UserSocket;
@@ -23,10 +24,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +47,12 @@ public class UserServiceImplTest {
 
     @Mock
     private PasswordResetRepository passwordResetRepository;
+
+    @Mock
+    private EmailVerificationRepository emailVerificationRepository;
+
+    @Mock
+    private EmailService emailService;
 
     @Mock
     private JwtService jwtService;
@@ -131,6 +140,68 @@ public class UserServiceImplTest {
 
         // Assert
         verify(userRepository, times(1)).delete(user);
+    }
+
+    @Test
+    public void UserService_ChangeEmailRequest_SendEmail() {
+        // Arrange
+        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        EmailVerification verification = EmailVerification.builder()
+                .user(user)
+                .token("token123")
+                .newEmail("test-email@test123.co.za")
+                .type(VerificationType.EMAIL)
+                .build();
+
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(emailVerificationRepository.findByUser(user)).thenReturn(List.of());
+        when(emailVerificationRepository.save(any(EmailVerification.class))).thenReturn(verification);
+
+        // Act
+        userService.changeEmailRequest("test-email@test123.co.za");
+
+        // Assert
+        verify(emailService, times(1))
+                .sendEmailChangeVerificationEmail(eq("test-email@test123.co.za"), any(String.class));
+    }
+
+    @Test
+    public void UserService_VerifyChangeEmailRequest_SuccessfullyUpdatesEmail() {
+        // Arrange: Mock authenticated user
+        Authentication auth = new UsernamePasswordAuthenticationToken(user.getEmail(), null, new ArrayList<>());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        // Prepare a valid email verification token
+        String token = "valid-token";
+        EmailVerification emailVerification = EmailVerification.builder()
+                .user(user)
+                .token(token)
+                .newEmail("new-email@test.com")
+                .expiryDate(LocalDateTime.now().plusHours(1))
+                .build();
+
+        // Stub repository interactions
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(emailVerificationRepository.findByUserAndToken(user, token)).thenReturn(Optional.of(emailVerification));
+        when(jwtService.generateToken(user)).thenReturn("new-token");
+        when(userAllergyRepository.findByUser(user)).thenReturn(List.of()); // Assuming empty allergies list
+
+        // Act
+        LoginResponse response = userService.verifyChangeEmailRequest(token);
+
+        // Assert: email was updated and saved
+        assertEquals("new-email@test.com", user.getEmail());
+        verify(userRepository, times(1)).save(user);
+        verify(emailVerificationRepository, times(1)).delete(emailVerification);
+
+        // Assert: token is generated
+        assertEquals("new-token", response.getToken());
+        assertEquals(86400000, response.getExpiresIn());
+
+        // Assert: Socket broadcast triggered
+        verify(userSocket, times(1)).sendUpdatedUser(response.getUser());
     }
 
 }

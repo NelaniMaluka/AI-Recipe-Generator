@@ -45,7 +45,6 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @NotBlank(message = "Password must not be blank")
     private String password;
 
     @Column(nullable = false)

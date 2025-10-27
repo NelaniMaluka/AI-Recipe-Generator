@@ -10,4 +10,8 @@ public interface UserService {
     LoginResponse updateUserDetails(UserDto userDto);
 
     void deleteUser();
+
+    void changeEmailRequest(String newEmail);
+
+    LoginResponse verifyChangeEmailRequest(String token);
 }

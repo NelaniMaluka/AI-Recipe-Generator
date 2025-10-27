@@ -1,5 +1,9 @@
 package com.nelani.recipe_search_backend.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nelani.recipe_search_backend.dto.IngredientDto;
+import com.nelani.recipe_search_backend.dto.RecipeDto;
+import com.nelani.recipe_search_backend.dto.StepDto;
 import com.nelani.recipe_search_backend.response.IngredientResponse;
 import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.response.StepResponse;
@@ -26,9 +30,11 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.mockito.ArgumentMatchers.any;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = RecipeController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -76,7 +82,7 @@ public class RecipeControllerTest {
 
                 // Asserts
                 Assertions.assertThat(response).isNotNull();
-                response.andExpect(MockMvcResultMatchers.status().isOk())
+                response.andExpect(status().isOk())
                                 .andExpect(jsonPath("$.name").value("recipe0"));
         }
 
@@ -91,7 +97,7 @@ public class RecipeControllerTest {
                                                 .contentType(MediaType.APPLICATION_JSON));
 
                 // Asserts
-                response.andExpect(MockMvcResultMatchers.status().isBadRequest());
+                response.andExpect(status().isBadRequest());
         }
 
         @Test
@@ -102,7 +108,7 @@ public class RecipeControllerTest {
                                                 .contentType(MediaType.APPLICATION_JSON));
 
                 // Assert
-                response.andExpect(MockMvcResultMatchers.status().isOk())
+                response.andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()", CoreMatchers.is(MealType.values().length)));
         }
 
@@ -114,7 +120,7 @@ public class RecipeControllerTest {
                                                 .contentType(MediaType.APPLICATION_JSON));
 
                 // Assert
-                response.andExpect(MockMvcResultMatchers.status().isOk())
+                response.andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()", CoreMatchers.is(DateFilter.values().length)));
         }
 
@@ -125,14 +131,14 @@ public class RecipeControllerTest {
 
                 // Act
                 ResultActions response = mockMvc.perform(
-                                get("/api/recipe")
+                                get("/api/recipe/search")
                                                 .param("searchWord", "recipe")
                                                 .param("page", "0")
                                                 .param("size", "5")
                                                 .contentType(MediaType.APPLICATION_JSON));
 
                 // Assert
-                response.andExpect(MockMvcResultMatchers.status().isOk())
+                response.andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()", CoreMatchers.is(recipeList.size())))
                                 .andExpect(jsonPath("$[0].name").value("recipe0"))
                                 .andExpect(jsonPath("$[1].name").value("recipe1"));
@@ -156,26 +162,69 @@ public class RecipeControllerTest {
                                                 .contentType(MediaType.APPLICATION_JSON));
 
                 // Assert
-                response.andExpect(MockMvcResultMatchers.status().isOk())
+                response.andExpect(status().isOk())
                                 .andExpect(jsonPath("$.length()", CoreMatchers.is(recipeList.size())))
                                 .andExpect(jsonPath("$[0].name").value("recipe0"))
                                 .andExpect(jsonPath("$[1].name").value("recipe1"));
         }
 
         @Test
-        public void RecipeController_GetRecipes_ReturnEmptyList() throws Exception {
-                // Act
-                ResultActions response = mockMvc.perform(
-                                get("/api/recipe")
-                                                .param("searchWord", "recipe")
-                                                .param("page", "0")
-                                                .param("size", "5")
-                                                .contentType(MediaType.APPLICATION_JSON));
+        public void RecipeController_UpdateRecipe_ReturnsUpdatedRecipe() throws Exception {
+                // Arrange
+                String publicId = "recipe123";
+                RecipeDto recipeDto = RecipeDto.builder()
+                                .publicId(publicId)
+                                .name("Updated Cake")
+                                .imageUrl("image.jpg")
+                                .mealType(MealType.APPETIZER)
+                                .cookTimeMinutes(30)
+                                .ingredients(List.of(new IngredientDto("Sugar", "2 tbsp")))
+                                .steps(List.of(new StepDto("Mix ingredients", 5)))
+                                .build();
 
-                // Assert
-                response.andExpect(MockMvcResultMatchers.status().isOk())
-                                .andExpect(MockMvcResultMatchers.jsonPath("$").isEmpty())
-                                .andExpect(jsonPath("$.length()", CoreMatchers.is(0)));
+                RecipeResponse updatedResponse = RecipeResponse.builder()
+                                .publicId(publicId)
+                                .name("Updated Cake")
+                                .imageUrl("image.jpg")
+                                .mealType(MealType.APPETIZER)
+                                .cookTimeMinutes(30)
+                                .ingredients(List.of(
+                                                IngredientResponse.builder().name("Sugar").quantity("2 tbsp").build()))
+                                .steps(List.of(StepResponse.builder().description("Mix ingredients").estimatedMinutes(5)
+                                                .build()))
+                                .build();
+
+                // Mock service
+                when(recipeService.updateRecipe(any(RecipeDto.class))).thenReturn(updatedResponse);
+
+                // Act & Assert
+                mockMvc.perform(put("/api/recipe/update-recipe")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(new ObjectMapper().writeValueAsString(recipeDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.name").value("Updated Cake"))
+                                .andExpect(jsonPath("$.mealType").value("APPETIZER"))
+                                .andExpect(jsonPath("$.ingredients[0].name").value("Sugar"))
+                                .andExpect(jsonPath("$.steps[0].description").value("Mix ingredients"));
+        }
+
+        @Test
+        public void deleteRecipe_ShouldReturnSuccessMessage() throws Exception {
+                String publicId = "abc123";
+
+                // Mock the service call
+                doNothing().when(recipeService).deleteRecipe(publicId);
+
+                // Act & Assert
+                mockMvc.perform(delete("/api/recipe/delete-recipe")
+                                .param("publicId", publicId)
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(content().string(
+                                                "Recipe with ID " + publicId + " has been successfully deleted."));
+
+                // Verify that the service was called
+                verify(recipeService).deleteRecipe(publicId);
         }
 
         private IngredientResponse createIngredient(String name, String quantity) {

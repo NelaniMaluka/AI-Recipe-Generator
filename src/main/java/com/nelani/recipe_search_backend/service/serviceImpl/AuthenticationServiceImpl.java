@@ -102,7 +102,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // Save and send the verification email
         userRepository.save(user);
         userVerificationRepository.save(verification);
-        sendVerificationEmail(user, verification.getToken());
+        emailService.sendAccountVerificationEmail(user.getEmail(), verification.getToken());
     }
 
     /**
@@ -172,7 +172,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         // Check if token exists
         var verification = userVerificationRepository
-                .findByToken(verifyUserDto.getToken())
+                .findByUserAndToken(user, verifyUserDto.getToken())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Verification failed: the token provided does not exist or is invalid."));
 
@@ -199,6 +199,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         userRepository.save(user);
         userVerificationRepository.save(verification);
+
+        // Send welcome email
+        emailService.sendWelcomeEmail(user.getEmail(), user.getFirstname() + " " + user.getLastname());
 
         // Generate a new user response
         return LoginResponse.builder()
@@ -249,52 +252,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             // Save the changes
             userVerificationRepository.save(verification);
-            sendVerificationEmail(user, verification.getToken());
+            emailService.sendAccountVerificationEmail(user.getEmail(), verification.getToken());
         } catch (Exception e) {
             throw new RuntimeException("Failed to reset token");
         }
-    }
-
-    private void sendVerificationEmail(User user, String token) {
-        String subject = "AI Recipe Generator - Verification code";
-
-        String htmlContent = "<!DOCTYPE html>"
-                + "<html lang='en'>"
-                + "  <head>"
-                + "    <meta charset='UTF-8' />"
-                + "    <meta name='viewport' content='width=device-width, initial-scale=1.0' />"
-                + "    <title>Email Verification</title>"
-                + "  </head>"
-                + "  <body style='font-family: Arial, sans-serif; color: #333; background: #f9f9f9; margin: 0; padding: 0;'>"
-                + "    <div style='max-width: 500px; width: 100%; margin: auto; background: #fff; border-radius: 10px; overflow: hidden;'>"
-                + "      <div style='text-align: center; padding: 20px; background: #2e86c1; color: white;'>"
-                + "        <h2 style='margin: 0;'>AI Recipe Generator</h2>"
-                + "      </div>"
-                + "      <div style='text-align:center; padding: 20px;'>"
-                + "        <img src='https://github.com/NelaniMaluka/AI-Recipe-Generator/blob/main/recipe-search-backend/images/logo.png' alt='AI Recipe Generator Logo' "
-                + "             style='width: 120px; height: auto; margin-bottom: 20px;'/>"
-                + "      </div>"
-                + "      <div style='padding: 0 20px 40px 20px;'>"
-                + "        <h3 style='color: #2e86c1;'>Verify Your Email Address</h3>"
-                + "        <p style='line-height: 1.6;'>Thank you for signing up for <strong>AI Recipe Generator</strong>! "
-                + "        To complete your registration, please verify your email address using the code below:</p>"
-                + "        <div style='text-align: center; margin: 30px 0;'>"
-                + "          <p style='font-size: 26px; font-weight: bold; color: #2e86c1; letter-spacing: 3px;'>"
-                + "            " + token
-                + "          </p>"
-                + "        </div>"
-                + "        <p style='line-height: 1.6;'>Enter this verification code in the app or website to activate your account.</p>"
-                + "        <hr style='margin: 30px 0; border: none; border-top: 1px solid #ccc' />"
-                + "        <p style='font-size: 13px; color: #666; text-align: center;'>Didn’t create an account? Please ignore this email.</p>"
-                + "        <p style='font-size: 12px; color: #999; text-align: center; margin-top: 15px;'>© "
-                + "            " + java.time.Year.now().getValue() + " AI Recipe Generator – All rights reserved.</p>"
-                + "      </div>"
-                + "    </div>"
-                + "  </body>"
-                + "</html>";
-
-        // Email the validation token to the provided email
-        emailService.sendEmail(user.getEmail(), subject, htmlContent);
     }
 
     private String generateVerificationCode() {

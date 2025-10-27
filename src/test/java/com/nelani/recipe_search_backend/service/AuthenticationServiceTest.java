@@ -92,7 +92,7 @@ public class AuthenticationServiceTest {
 
                 // Assert
                 verify(emailService, Mockito.times(1))
-                                .sendEmail(Mockito.eq(dto.getEmail()), Mockito.anyString(), Mockito.anyString());
+                                .sendAccountVerificationEmail(any(String.class), Mockito.anyString());
         }
 
         @Test
@@ -143,7 +143,7 @@ public class AuthenticationServiceTest {
                 user.setEnabled(true);
                 when(userRepository.findByEmail(dto.getEmail()))
                                 .thenReturn(Optional.of(user));
-                when(userVerificationRepository.findByToken(dto.getToken()))
+                when(userVerificationRepository.findByUserAndToken(user, dto.getToken()))
                                 .thenReturn(Optional.of(userVerification));
                 when(jwtService.generateToken(user))
                                 .thenReturn("token");
@@ -168,8 +168,7 @@ public class AuthenticationServiceTest {
 
                 // Assert
                 verify(emailService, Mockito.times(1))
-                                .sendEmail(Mockito.eq("test-email@test.co.za"), Mockito.anyString(),
-                                                Mockito.anyString());
+                                .sendAccountVerificationEmail(any(String.class), Mockito.anyString());
         }
 
 }
