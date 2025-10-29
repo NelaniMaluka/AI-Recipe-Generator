@@ -1,5 +1,6 @@
 package com.nelani.recipe_search_backend.service.serviceImpl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +16,9 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -47,8 +51,13 @@ public class RecipeGenerator {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void generateAndSaveRecipes(String searchWord) {
         // Call AI service to fetch recipes (may return empty if AI fails or no matches
-        // found)
-        List<Recipe> recipes = fetchRecipesFromAi(searchWord);
+        List<Recipe> recipes;
+        try {
+            recipes = fetchRecipesFromAi(searchWord);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to fetch recipes for '{}', returning empty list", searchWord, e);
+            recipes = Collections.emptyList();
+        }
 
         // Guard clause: stop early if no recipes were generated
         if (recipes == null || recipes.isEmpty()) {
@@ -86,7 +95,8 @@ public class RecipeGenerator {
      * @param searchWord The main ingredient or recipe type to generate recipes for.
      * @return List of Recipe objects
      */
-    public List<Recipe> fetchRecipesFromAi(String searchWord) {
+    @Retryable(retryFor = { Exception.class }, maxAttempts = 3, backoff = @Backoff(delay = 2000, multiplier = 2))
+    public List<Recipe> fetchRecipesFromAi(String searchWord) throws JsonProcessingException {
         String url = "https://router.huggingface.co/v1/chat/completions";
         RestTemplate restTemplate = new RestTemplate();
 
@@ -114,79 +124,88 @@ public class RecipeGenerator {
 
         HttpEntity<String> entity = new HttpEntity<>(inputJson, headers);
 
-        try {
-            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-            String responseJson = response.getBody();
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(responseJson);
+        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+        String responseJson = response.getBody();
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(responseJson);
 
-            String rawContent = root.get("choices")
-                    .get(0)
-                    .get("message")
-                    .get("content")
-                    .asText();
+        String rawContent = root.get("choices")
+                .get(0)
+                .get("message")
+                .get("content")
+                .asText();
 
-            // Remove code fences and extra text
-            rawContent = rawContent.strip()
-                    .replaceAll("(?s)^```.*?\\n", "")
-                    .replaceAll("(?s)```$", "");
+        // Remove code fences and extra text
+        rawContent = rawContent.strip()
+                .replaceAll("(?s)^```.*?\\n", "")
+                .replaceAll("(?s)```$", "");
 
-            // Extract the JSON array inside the response
-            int start = rawContent.indexOf("[");
-            int end = rawContent.lastIndexOf("]");
-            if (start == -1 || end == -1 || end <= start) {
-                log.warn("No JSON array found in Hugging Face response for '{}'", searchWord);
-                recipeSocket.sendAiResults(Collections.emptyList(), searchWord);
-                return Collections.emptyList();
-            }
-            String jsonArray = rawContent.substring(start, end + 1);
-
-            List<Recipe> recipes = mapper.readValue(jsonArray, new TypeReference<List<Recipe>>() {
-            });
-            recipes.forEach(recipe -> recipe.setImageUrl(recipeImageGenerator(recipe.getName())));
-            return recipes;
-
-        } catch (Exception e) {
-            log.error("Failed to generate recipes for '{}'", searchWord, e);
+        // Extract the JSON array inside the response
+        int start = rawContent.indexOf("[");
+        int end = rawContent.lastIndexOf("]");
+        if (start == -1 || end == -1 || end <= start) {
+            log.warn("No JSON array found in Hugging Face response for '{}'", searchWord);
             recipeSocket.sendAiResults(Collections.emptyList(), searchWord);
             return Collections.emptyList();
         }
+        String jsonArray = rawContent.substring(start, end + 1);
+
+        List<Recipe> recipes = mapper.readValue(jsonArray, new TypeReference<List<Recipe>>() {
+        });
+        recipes.forEach(recipe -> {
+            try {
+                recipe.setImageUrl(recipeImageGenerator(recipe.getName()));
+            } catch (JsonProcessingException e) {
+                log.error("Failed to generate image for recipe '{}', using fallback image", recipe.getName(), e);
+                // Fallback to placeholder
+                recipe.setImageUrl("https://via.placeholder.com/600x400.png?text=" + recipe.getName());
+            }
+        });
+
+        return recipes;
     }
 
-    public String recipeImageGenerator(String recipeName) {
+    @Retryable(retryFor = { Exception.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2))
+    public String recipeImageGenerator(String recipeName) throws JsonProcessingException {
         String url = "https://api.unsplash.com/search/photos?query="
                 + recipeName + "&client_id=" + unsplashApiKey;
 
         RestTemplate restTemplate = new RestTemplate();
 
-        try {
-            // Call Unsplash API
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        // Call Unsplash API
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode root = mapper.readTree(response.getBody());
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(response.getBody());
 
-                // Navigate to first result's URL
-                JsonNode results = root.path("results");
-                if (results.isArray() && results.size() > 0) {
-                    return results.get(0).path("urls").path("regular").asText();
-                }
+            // Navigate to first result's URL
+            JsonNode results = root.path("results");
+            if (results.isArray() && results.size() > 0) {
+                return results.get(0).path("urls").path("regular").asText();
             }
-
-            // Fallback if no images found
-            return "https://via.placeholder.com/600x400.png?text=" + recipeName;
-
-        } catch (Exception e) {
-            // Log and fallback
-            System.err.println("Error fetching image for " + recipeName + ": " + e.getMessage());
-            return "https://via.placeholder.com/600x400.png?text=" + recipeName;
         }
+
+        // Fallback if no images found
+        return "https://via.placeholder.com/600x400.png?text=" + recipeName;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveRecipe(Recipe recipe) {
         recipeRepository.save(recipe);
+    }
+
+    @Recover
+    public List<Recipe> recoverRecipes(Exception e, String searchWord) {
+        log.error("AI generation permanently failed for '{}', falling back to empty list", searchWord, e);
+        recipeSocket.sendAiResults(Collections.emptyList(), searchWord);
+        return Collections.emptyList();
+    }
+
+    @Recover
+    public String recoverImage(Exception e, String recipeName) {
+        log.error("Image generation failed for '{}', using fallback image", recipeName, e);
+        return "https://via.placeholder.com/600x400.png?text=" + recipeName;
     }
 
 }

@@ -13,6 +13,7 @@ import com.nelani.recipe_search_backend.repository.UserAllergyRepository;
 import com.nelani.recipe_search_backend.repository.UserRepository;
 import com.nelani.recipe_search_backend.repository.UserVerificationRepository;
 import com.nelani.recipe_search_backend.response.LoginResponse;
+import com.nelani.recipe_search_backend.security.ApplicationUserRole;
 import com.nelani.recipe_search_backend.security.JwtService;
 import com.nelani.recipe_search_backend.service.AuthenticationService;
 import org.springframework.http.HttpStatus;
@@ -81,6 +82,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .email(userDto.getEmail())
                 .password(passwordEncoder.encode(userDto.getPassword()))
                 .provider(Provider.LOCAL)
+                .role(ApplicationUserRole.USER)
                 .build();
 
         // Generate the publicId for the user
@@ -122,8 +124,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Transactional
     public LoginResponse login(LoginUserDto loginUserDto) {
         // Check if a user exists with the provided email
-        User user = userRepository.findByEmail(loginUserDto.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+        var user = userRepository.findByEmail(loginUserDto.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         // checks if the account is verified
         if (!user.isEnabled()) {
@@ -222,7 +224,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      */
     @Override
     @Transactional
-    public void resetVerificationCode(String email) {
+    public void resendVerificationCode(String email) {
         // Check if a user exists with the provided email
         var user = userRepository
                 .findByEmail(email)

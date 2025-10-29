@@ -21,10 +21,6 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class RecipeDto {
-
-    @NotBlank(message = "Recipe publicId cannot be blank")
-    private String publicId;
-
     @NotBlank(message = "Recipe name cannot be blank")
     @Size(max = 100, message = "Recipe name cannot exceed 100 characters")
     private String name;

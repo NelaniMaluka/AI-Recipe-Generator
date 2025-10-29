@@ -1,5 +1,6 @@
 package com.nelani.recipe_search_backend.model;
 
+import com.nelani.recipe_search_backend.security.ApplicationUserRole;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -54,9 +55,13 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean enabled = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ApplicationUserRole role;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return role.grantedAuthorities();
     }
 
     @Override

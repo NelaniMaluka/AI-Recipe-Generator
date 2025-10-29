@@ -1,5 +1,6 @@
 package com.nelani.recipe_search_backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nelani.recipe_search_backend.model.MealType;
 import com.nelani.recipe_search_backend.model.Recipe;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
@@ -45,7 +46,7 @@ public class RecipeGeneratorTest {
     }
 
     @Test
-    public void RecipeGenerator_GenerateAndSaveRecipes_ReturnVoid() {
+    public void RecipeGenerator_GenerateAndSaveRecipes_ReturnVoid() throws JsonProcessingException {
         // Act
         ArgumentCaptor<Recipe> recipeCaptor = ArgumentCaptor.forClass(Recipe.class);
         doReturn(recipeList).when(recipeGenerator).fetchRecipesFromAi(Mockito.anyString());

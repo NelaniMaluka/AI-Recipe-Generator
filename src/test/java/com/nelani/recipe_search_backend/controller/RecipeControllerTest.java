@@ -195,7 +195,7 @@ public class RecipeControllerTest {
                                 .build();
 
                 // Mock service
-                when(recipeService.updateRecipe(any(RecipeDto.class))).thenReturn(updatedResponse);
+                when(recipeService.updateRecipe(any(String.class), any(RecipeDto.class))).thenReturn(updatedResponse);
 
                 // Act & Assert
                 mockMvc.perform(put("/api/recipe/update-recipe")

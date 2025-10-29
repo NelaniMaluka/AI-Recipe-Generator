@@ -38,9 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
         // Skip actuator, auth, recipe, password reset, swagger
-        return path.startsWith("/api/auth")
-                || path.startsWith("/api/recipe")
-                || path.startsWith("/api/password/reset")
+        return path.startsWith("/api/public")
                 || path.startsWith("/actuator")
                 || path.startsWith("/v2/api-docs")
                 || path.startsWith("/v3/api-docs")
@@ -74,6 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (username != null && authentication == null) {
                 // Load user by username (matches DB username field)
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                log.debug("Authorities: {}", userDetails.getAuthorities());
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     log.info("Authenticated user: {}", username);

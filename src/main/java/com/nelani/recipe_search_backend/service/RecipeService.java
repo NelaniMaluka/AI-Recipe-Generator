@@ -17,7 +17,7 @@ public interface RecipeService {
 
     void emailRecipe(String email, String publicId);
 
-    RecipeResponse updateRecipe(RecipeDto dto);
+    RecipeResponse updateRecipe(String publicId, RecipeDto dto);
 
     void deleteRecipe(String publicId);
 }

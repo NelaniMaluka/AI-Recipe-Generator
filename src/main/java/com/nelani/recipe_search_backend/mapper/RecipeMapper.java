@@ -18,6 +18,7 @@ public class RecipeMapper {
                                 .imageUrl(recipe.getImageUrl())
                                 .mealType(recipe.getMealType())
                                 .cookTimeMinutes(recipe.getCookTimeMinutes())
+                                .views(recipe.getViews())
                                 .build();
         }
 

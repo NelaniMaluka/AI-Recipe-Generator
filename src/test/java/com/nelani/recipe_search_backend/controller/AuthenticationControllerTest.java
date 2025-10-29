@@ -134,7 +134,7 @@ public class AuthenticationControllerTest {
   @Test
   public void AuthenticationController_ResetVerification_ReturnsString() throws Exception {
     // Arrange
-    doNothing().when(authenticationService).resetVerificationCode(any(String.class));
+    doNothing().when(authenticationService).resendVerificationCode(any(String.class));
 
     // Act
     var response = mockMvc.perform(post("/api/auth/reset-verification")

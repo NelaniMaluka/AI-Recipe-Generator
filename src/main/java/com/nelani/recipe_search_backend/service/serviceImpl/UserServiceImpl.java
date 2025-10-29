@@ -34,6 +34,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordResetRepository passwordResetRepository;
     private final UserVerificationRepository userVerificationRepository;
     private final EmailVerificationRepository emailVerificationRepository;
+    private final RecipeLikeRepository recipeLikeRepository;
+    private final RecipeViewRepository recipeViewRepository;
     private final EmailService emailService;
     private final UserSocket userSocket;
     private final JwtService jwtService;
@@ -41,7 +43,8 @@ public class UserServiceImpl implements UserService {
     public UserServiceImpl(UserRepository userRepository, AllergyRepository allergyRepository,
             UserAllergyRepository userAllergyRepository, PasswordResetRepository passwordResetRepository,
             UserVerificationRepository userVerificationRepository,
-            EmailVerificationRepository emailVerificationRepository, EmailService emailService, UserSocket userSocket,
+            EmailVerificationRepository emailVerificationRepository, RecipeLikeRepository recipeLikeRepository,
+            RecipeViewRepository recipeViewRepository, EmailService emailService, UserSocket userSocket,
             JwtService jwtService) {
         this.userRepository = userRepository;
         this.allergyRepository = allergyRepository;
@@ -49,6 +52,8 @@ public class UserServiceImpl implements UserService {
         this.passwordResetRepository = passwordResetRepository;
         this.userVerificationRepository = userVerificationRepository;
         this.emailVerificationRepository = emailVerificationRepository;
+        this.recipeLikeRepository = recipeLikeRepository;
+        this.recipeViewRepository = recipeViewRepository;
         this.emailService = emailService;
         this.userSocket = userSocket;
         this.jwtService = jwtService;
@@ -182,6 +187,8 @@ public class UserServiceImpl implements UserService {
                     passwordResetRepository.deleteByUser(user);
                     userVerificationRepository.deleteByUser(user);
                     emailVerificationRepository.deleteByUser(user);
+                    recipeLikeRepository.deleteByUser(user);
+                    recipeViewRepository.deleteByUser(user);
                     userRepository.delete(user);
                     log.info("User '{}' successfully deleted.", email);
                     emailService.sendAccountDeletionEmail(email, user.getFirstname() + " " + user.getLastname());

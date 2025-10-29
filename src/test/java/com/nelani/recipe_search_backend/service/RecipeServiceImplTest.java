@@ -196,7 +196,6 @@ public class RecipeServiceImplTest {
                 StepDto stepDto = new StepDto("Mix ingredients", 5);
 
                 RecipeDto dto = RecipeDto.builder()
-                                .publicId(publicId)
                                 .name("Cake")
                                 .imageUrl("image.jpg")
                                 .mealType(MealType.APPETIZER)
@@ -215,7 +214,7 @@ public class RecipeServiceImplTest {
                 when(recipeRepository.save(any(Recipe.class))).thenAnswer(i -> i.getArgument(0));
 
                 // Act
-                RecipeResponse response = recipeService.updateRecipe(dto);
+                RecipeResponse response = recipeService.updateRecipe(publicId, dto);
 
                 // Assert
                 Assertions.assertThat(response).isNotNull();
@@ -230,7 +229,7 @@ public class RecipeServiceImplTest {
                 verify(recipeRepository, times(1)).save(existingRecipe);
 
                 // Verify socket sent
-                verify(recipeSocket, times(1)).sendSendUpdatedRecipe(any(RecipeResponse.class));
+                verify(recipeSocket, times(1)).sendUpdatedRecipe(any(RecipeResponse.class));
         }
 
         @Test

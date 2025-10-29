@@ -2,6 +2,8 @@ package com.nelani.recipe_search_backend.service.serviceImpl;
 
 import com.nelani.recipe_search_backend.dto.RecipeDto;
 import com.nelani.recipe_search_backend.model.*;
+import com.nelani.recipe_search_backend.repository.RecipeLikeRepository;
+import com.nelani.recipe_search_backend.repository.RecipeViewRepository;
 import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.mapper.RecipeMapper;
 import com.nelani.recipe_search_backend.notifications.EmailService;
@@ -14,9 +16,11 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,13 +30,18 @@ public class RecipeServiceImpl implements RecipeService {
 
         private final RecipeGenerator recipeGenerator;
         private final RecipeRepository recipeRepository;
+        private final RecipeViewRepository recipeViewRepository;
+        private final RecipeLikeRepository recipeLikeRepository;
         private final EmailService emailService;
         private final RecipeSocket recipeSocket;
 
         public RecipeServiceImpl(RecipeGenerator recipeGenerator, RecipeRepository recipeRepository,
+                        RecipeViewRepository recipeViewRepository, RecipeLikeRepository recipeLikeRepository,
                         EmailService emailService, RecipeSocket recipeSocket) {
                 this.recipeGenerator = recipeGenerator;
                 this.recipeRepository = recipeRepository;
+                this.recipeViewRepository = recipeViewRepository;
+                this.recipeLikeRepository = recipeLikeRepository;
                 this.emailService = emailService;
                 this.recipeSocket = recipeSocket;
         }
@@ -51,7 +60,8 @@ public class RecipeServiceImpl implements RecipeService {
         public RecipeResponse getRecipe(String publicId) {
                 // Fetch the Recipe
                 Recipe recipe = recipeRepository.findByPublicId(publicId)
-                                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND, "Recipe not found with ID: " + publicId));
 
                 // Return a RecipeDto to the user
                 return RecipeMapper.mapRecipeWithAllDetails(recipe);
@@ -135,61 +145,85 @@ public class RecipeServiceImpl implements RecipeService {
         public void emailRecipe(String email, String publicId) {
                 // Fetch the Recipe
                 Recipe recipe = recipeRepository.findByPublicId(publicId)
-                                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND, "Recipe not found with ID: " + publicId));
 
                 emailService.sendRecipeEmail(email, recipe);
         }
 
-        @CacheEvict(value = "recipe", key = "#dto.publicId")
+        /**
+         * Updates a recipe identified by its public ID.
+         * <p>
+         * Updates recipe fields, ingredients, and steps. Saves changes to the database,
+         * evicts cache, and sends the updated recipe via WebSocket.
+         *
+         * @param publicId the recipe's public ID
+         * @param dto      DTO containing updated recipe details
+         * @return the updated {@link RecipeResponse}
+         * @throws IllegalArgumentException if the recipe does not exist
+         */
+        @CacheEvict(value = "recipe", key = "#publicId")
         @Override
         @Transactional
-        public RecipeResponse updateRecipe(RecipeDto dto) {
-                // Fetch the Recipe
-                Recipe recipe = recipeRepository.findByPublicId(dto.getPublicId())
-                                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
+        public RecipeResponse updateRecipe(String publicId, RecipeDto dto) {
+                // Fetch the recipe or throw exception if not found
+                Recipe recipe = recipeRepository.findByPublicId(publicId)
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND, "Recipe not found with ID: " + publicId));
 
-                // update the fields
-                recipe.setPublicId(dto.getPublicId());
+                // Update basic fields
                 recipe.setName(dto.getName());
                 recipe.setImageUrl(dto.getImageUrl());
                 recipe.setMealType(dto.getMealType());
                 recipe.setCookTimeMinutes(dto.getCookTimeMinutes());
-                List<Ingredient> ingredientList = dto.getIngredients().stream()
-                                .map(ingredientDto -> Ingredient.builder()
-                                                .name(ingredientDto.getName())
-                                                .quantity(ingredientDto.getQuantity())
+
+                // Map ingredients and steps
+                recipe.setIngredients(dto.getIngredients().stream()
+                                .map(i -> Ingredient.builder()
+                                                .name(i.getName())
+                                                .quantity(i.getQuantity())
                                                 .recipe(recipe)
                                                 .build())
-                                .toList();
-                List<Step> stepList = dto.getSteps().stream()
-                                .map(ingredientDto -> Step.builder()
-                                                .description(ingredientDto.getDescription())
-                                                .estimatedMinutes(ingredientDto.getEstimatedMinutes())
+                                .toList());
+
+                recipe.setSteps(dto.getSteps().stream()
+                                .map(s -> Step.builder()
+                                                .description(s.getDescription())
+                                                .estimatedMinutes(s.getEstimatedMinutes())
                                                 .recipe(recipe)
                                                 .build())
-                                .toList();
+                                .toList());
 
-                // Save the recipe
-                recipe.setIngredients(ingredientList);
-                recipe.setSteps(stepList);
-
+                // Persist updates
                 recipeRepository.save(recipe);
 
+                // Map to response and push via WebSocket
                 RecipeResponse response = RecipeMapper.mapRecipeWithAllDetails(recipe);
-                recipeSocket.sendSendUpdatedRecipe(response);
+                recipeSocket.sendUpdatedRecipe(response);
 
                 return response;
         }
 
+        /**
+         * Deletes a recipe identified by its public ID.
+         * <p>
+         * Removes the recipe from the database and evicts its cache entry.
+         *
+         * @param publicId the recipe's public ID
+         * @throws IllegalArgumentException if the recipe does not exist
+         */
         @Override
         @Transactional
         @CacheEvict(value = "recipe", key = "#publicId")
         public void deleteRecipe(String publicId) {
-                // Fetch the Recipe
+                // Fetch the recipe or throw exception if not found
                 Recipe recipe = recipeRepository.findByPublicId(publicId)
-                                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe Id."));
+                                .orElseThrow(() -> new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND, "Recipe not found with ID: " + publicId));
 
                 // Delete the recipe
+                recipeViewRepository.deleteByRecipe(recipe);
+                recipeLikeRepository.deleteByRecipe(recipe);
                 recipeRepository.delete(recipe);
         }
 

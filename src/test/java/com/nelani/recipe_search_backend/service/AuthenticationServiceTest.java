@@ -164,7 +164,7 @@ public class AuthenticationServiceTest {
                                 .thenReturn(Optional.of(user));
 
                 // Act
-                authService.resetVerificationCode("test-email@test.co.za");
+                authService.resendVerificationCode("test-email@test.co.za");
 
                 // Assert
                 verify(emailService, Mockito.times(1))

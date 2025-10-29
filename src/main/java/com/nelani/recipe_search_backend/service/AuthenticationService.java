@@ -12,5 +12,5 @@ public interface AuthenticationService {
 
     LoginResponse verifyUser(VerifyUserDto verifyUserDto);
 
-    void resetVerificationCode(String email);
+    void resendVerificationCode(String email);
 }

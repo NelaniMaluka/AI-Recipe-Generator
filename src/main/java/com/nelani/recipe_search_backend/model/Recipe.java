@@ -49,6 +49,11 @@ public class Recipe {
     @Min(value = 1, message = "Cook time must be at least 1 minute")
     private Integer cookTimeMinutes;
 
+    @Column(nullable = false)
+    @Min(value = 0, message = "Views cannot be negative")
+    @Builder.Default
+    private long views = 0;
+
     @Builder.Default
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

@@ -33,6 +33,9 @@ public class RecipeResponse {
         @Schema(description = "Time required to cook the recipe in minutes", example = "45")
         private Integer cookTimeMinutes;
 
+        @Schema(description = "Total views for the recipe", example = "1000")
+        private Long views;
+
         @Schema(description = "List of ingredients required for the recipe")
         private List<IngredientResponse> ingredients;
 
