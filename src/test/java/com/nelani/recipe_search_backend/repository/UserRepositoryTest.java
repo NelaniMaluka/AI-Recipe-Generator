@@ -2,6 +2,7 @@ package com.nelani.recipe_search_backend.repository;
 
 import com.nelani.recipe_search_backend.model.Provider;
 import com.nelani.recipe_search_backend.model.User;
+import com.nelani.recipe_search_backend.security.ApplicationUserRole;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ public class UserRepositoryTest {
                 .lastname("lastname")
                 .email("test-email@test.co.za")
                 .publicId("publicId")
+                .role(ApplicationUserRole.USER)
                 .provider(Provider.LOCAL)
                 .password("Password@123")
                 .build();

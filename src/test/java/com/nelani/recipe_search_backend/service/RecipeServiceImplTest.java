@@ -3,6 +3,9 @@ package com.nelani.recipe_search_backend.service;
 import com.nelani.recipe_search_backend.dto.IngredientDto;
 import com.nelani.recipe_search_backend.dto.RecipeDto;
 import com.nelani.recipe_search_backend.dto.StepDto;
+import com.nelani.recipe_search_backend.notifications.EmailService;
+import com.nelani.recipe_search_backend.repository.RecipeLikeRepository;
+import com.nelani.recipe_search_backend.repository.RecipeViewRepository;
 import com.nelani.recipe_search_backend.response.RecipeResponse;
 import com.nelani.recipe_search_backend.model.*;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
@@ -15,12 +18,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.data.domain.Page;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -43,7 +48,16 @@ public class RecipeServiceImplTest {
         private RecipeGenerator recipeGenerator;
 
         @Mock
+        private RecipeViewRepository recipeViewRepository;
+
+        @Mock
+        private RecipeLikeRepository recipeLikeRepository;
+
+        @Mock
         private RecipeSocket recipeSocket;
+
+        @Mock
+        private EmailService emailService;
 
         @InjectMocks
         private RecipeServiceImpl recipeService;
@@ -80,16 +94,16 @@ public class RecipeServiceImplTest {
 
         @Test
         public void RecipeService_GetRecipe_ReturnsException() {
-                IllegalArgumentException exception = assertThrows(
-                                IllegalArgumentException.class,
+                ResponseStatusException exception = assertThrows(
+                                ResponseStatusException.class,
                                 () -> recipeService.getRecipe("publicId"));
 
                 // Asserts
-                assertEquals("Invalid recipe Id.", exception.getMessage());
+                assertTrue(exception.getMessage().contains("Recipe not found with ID: " + "publicId"));
         }
 
         @Test
-        public void RecipeService_getRecipes_ReturnRecipesDto() {
+        public void RecipeService_SearchRecipe_ReturnRecipesDto() {
                 // Act
                 Pageable pageable = PageRequest.of(0, 5);
                 when(recipeRepository.searchRecipes("recipe", pageable)).thenReturn(recipeList);
@@ -105,7 +119,7 @@ public class RecipeServiceImplTest {
         }
 
         @Test
-        public void RecipeService_getRecipes_ReturnEmptyList() {
+        public void RecipeService_SearchRecipe_ReturnEmptyList() {
                 // Arrange
                 List<Recipe> recipeList = new ArrayList<>();
 
@@ -188,6 +202,22 @@ public class RecipeServiceImplTest {
         }
 
         @Test
+        public void RecipeService_EmailRecipe_SendEmail() {
+                // Arrange
+                Recipe mockRecipe = recipeList.get(0);
+
+                when(recipeRepository.findByPublicId(any(String.class)))
+                                .thenReturn(Optional.of(mockRecipe));
+
+                // Act
+                recipeService.emailRecipe("test-email@test.co.za", mockRecipe.getPublicId());
+
+                // Assert
+                verify(emailService, Mockito.times(1))
+                                .sendRecipeEmail(any(String.class), any(Recipe.class));
+        }
+
+        @Test
         public void RecipeService_UpdateRecipe_ShouldUpdateRecipeAndSendSocket() {
                 // Arrange
                 String publicId = "recipe123";
@@ -234,18 +264,20 @@ public class RecipeServiceImplTest {
 
         @Test
         void RecipeService_deleteRecipe_ShouldDeleteRecipe() {
-                String publicId = "abc123";
+                // Arrange
                 Recipe recipe = new Recipe();
-                recipe.setPublicId(publicId);
+                recipe.setPublicId("abc123");
 
-                // Mock repository to return the recipe
-                when(recipeRepository.findByPublicId(publicId)).thenReturn(Optional.of(recipe));
+                when(recipeRepository.findByPublicId("abc123"))
+                                .thenReturn(Optional.of(recipe));
 
-                // Call the method
-                recipeService.deleteRecipe(publicId);
+                // Act
+                recipeService.deleteRecipe("abc123");
 
-                // Verify that delete was called once with the correct recipe
-                verify(recipeRepository, times(1)).delete(recipe);
+                // Assert
+                verify(recipeRepository).delete(recipe);
+                verify(recipeViewRepository).deleteByRecipe(recipe);
+                verify(recipeLikeRepository).deleteByRecipe(recipe);
         }
 
         private Ingredient createIngredient(String name, String quantity) {

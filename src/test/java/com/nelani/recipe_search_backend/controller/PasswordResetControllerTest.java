@@ -19,8 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = PasswordController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -41,28 +41,27 @@ public class PasswordResetControllerTest {
         private UserDetailsService userDetailsService;
 
         @Test
-        public void PasswordResetController_CreateResetToken_ReturnsString() throws Exception {
+        public void PasswordResetController_CreateResetToken_ReturnsJson() throws Exception {
                 // Arrange
                 doNothing().when(passwordResetService).createPasswordResetToken(any(String.class));
 
-                // Act
-                var response = mockMvc.perform(post("/api/password/reset/request-reset")
+                // Act & Assert
+                mockMvc.perform(post("/api/public/password/request-reset")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .param("email", "test-email@test.co.za"));
-
-                // Assert
-                response.andExpect(status().isCreated())
-                                .andExpect(content().string(
-                                                "Password reset token has been sent successfully to test-email@test.co.za."));
+                                .param("email", "test-email@test.co.za"))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.message")
+                                                .value("Password reset token has been sent successfully."))
+                                .andExpect(jsonPath("$.email").value("test-email@test.co.za"));
         }
 
         @Test
-        public void PasswordResetController_Reset_ReturnsString() throws Exception {
+        public void PasswordResetController_Reset_ReturnsJson() throws Exception {
                 // Arrange
                 doNothing().when(passwordResetService).resetPassword(any(PasswordResetDto.class));
 
-                // Act
-                var response = mockMvc.perform(post("/api/password/reset/change-password")
+                // Act & Assert
+                mockMvc.perform(post("/api/public/password/reset")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                                 {
@@ -71,21 +70,19 @@ public class PasswordResetControllerTest {
                                                   "newPassword": "Password@123",
                                                   "repeatPassword": "Password@123"
                                                 }
-                                                """));
-
-                // Assert
-                response.andExpect(status().isOk())
-                                .andExpect(content().string(
-                                                "Your password has been successfully reset. You can now log in with your new password."));
+                                                """))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message")
+                                                .value("Your password has been successfully reset. You can now log in with your new password."));
         }
 
         @Test
-        public void PasswordResetController_ChangePassword_ReturnsString() throws Exception {
+        public void PasswordResetController_ChangePassword_ReturnsJson() throws Exception {
                 // Arrange
                 doNothing().when(passwordResetService).changePassword(any(ChangePasswordDto.class));
 
-                // Act
-                var response = mockMvc.perform(post("/api/password/change-password")
+                // Act & Assert
+                mockMvc.perform(put("/api/user/password")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                                 {
@@ -93,12 +90,9 @@ public class PasswordResetControllerTest {
                                                   "newPassword": "Password@123",
                                                   "repeatPassword": "Password@123"
                                                 }
-                                                """));
-
-                // Assert
-                response.andExpect(status().isOk())
-                                .andExpect(content().string(
-                                                "Your password has been successfully updated."));
+                                                """))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Your password has been successfully updated."));
         }
 
 }

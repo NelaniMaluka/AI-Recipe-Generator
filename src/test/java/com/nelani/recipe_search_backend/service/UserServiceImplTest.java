@@ -52,6 +52,12 @@ public class UserServiceImplTest {
     private EmailVerificationRepository emailVerificationRepository;
 
     @Mock
+    private RecipeViewRepository recipeViewRepository;
+
+    @Mock
+    private RecipeLikeRepository recipeLikeRepository;
+
+    @Mock
     private EmailService emailService;
 
     @Mock

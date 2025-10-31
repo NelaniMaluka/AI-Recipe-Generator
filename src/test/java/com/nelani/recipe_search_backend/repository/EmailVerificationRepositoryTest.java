@@ -4,6 +4,7 @@ import com.nelani.recipe_search_backend.model.EmailVerification;
 import com.nelani.recipe_search_backend.model.Provider;
 import com.nelani.recipe_search_backend.model.User;
 import com.nelani.recipe_search_backend.model.VerificationType;
+import com.nelani.recipe_search_backend.security.ApplicationUserRole;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ public class EmailVerificationRepositoryTest {
                                 .lastname("lastname")
                                 .email("test-email@test.co.za")
                                 .publicId("publicId")
+                                .role(ApplicationUserRole.USER)
                                 .provider(Provider.LOCAL)
                                 .password("Password@123")
                                 .build();
@@ -65,6 +67,7 @@ public class EmailVerificationRepositoryTest {
                                 .lastname("lastname")
                                 .email("test-email@test.co.za")
                                 .publicId("publicId")
+                                .role(ApplicationUserRole.USER)
                                 .provider(Provider.LOCAL)
                                 .password("Password@123")
                                 .build();
@@ -91,6 +94,7 @@ public class EmailVerificationRepositoryTest {
                                 .lastname("lastname")
                                 .email("test-email@test.co.za")
                                 .publicId("publicId")
+                                .role(ApplicationUserRole.USER)
                                 .provider(Provider.LOCAL)
                                 .password("Password@123")
                                 .build();

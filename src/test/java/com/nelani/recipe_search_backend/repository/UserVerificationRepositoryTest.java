@@ -4,6 +4,7 @@ import com.nelani.recipe_search_backend.model.Provider;
 import com.nelani.recipe_search_backend.model.User;
 import com.nelani.recipe_search_backend.model.UserVerification;
 import com.nelani.recipe_search_backend.model.VerificationType;
+import com.nelani.recipe_search_backend.security.ApplicationUserRole;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ public class UserVerificationRepositoryTest {
                                 .lastname("lastname")
                                 .email("test-email@test.co.za")
                                 .publicId("publicId")
+                                .role(ApplicationUserRole.USER)
                                 .provider(Provider.LOCAL)
                                 .password("Password@123")
                                 .build();
@@ -58,14 +60,46 @@ public class UserVerificationRepositoryTest {
         }
 
         @Test
-        public void UserAllergyRepository_DeleteByUser_RemovesRecords() {
-                // Arrange
+        public void UserVerificationRepository_FindByUser_ReturnOptionalUserVerification() {
                 // Arrange
                 User user = User.builder()
                                 .firstname("firstname")
                                 .lastname("lastname")
                                 .email("test-email@test.co.za")
                                 .publicId("publicId")
+                                .role(ApplicationUserRole.USER)
+                                .provider(Provider.LOCAL)
+                                .password("Password@123")
+                                .build();
+
+                UserVerification userVerification = UserVerification.builder()
+                                .token("token-123")
+                                .user(user)
+                                .expiryDate(LocalDateTime.now().plusMinutes(15))
+                                .type(VerificationType.EMAIL)
+                                .build();
+
+                // Act
+                userRepository.save(user);
+                verificationRepository.save(userVerification);
+
+                // Assert
+                var result = verificationRepository.findByUser(user);
+                Assertions.assertThat(result.size()).isEqualTo(1);
+                Assertions.assertThat(result.get(0).getUser()).isEqualTo(user);
+                Assertions.assertThat(result.get(0).getExpiryDate()).isAfter(LocalDateTime.now());
+                Assertions.assertThat(result.get(0).getType()).isEqualTo(VerificationType.EMAIL);
+        }
+
+        @Test
+        public void UserAllergyRepository_DeleteByUser_RemovesRecords() {
+                // Arrange
+                User user = User.builder()
+                                .firstname("firstname")
+                                .lastname("lastname")
+                                .email("test-email@test.co.za")
+                                .publicId("publicId")
+                                .role(ApplicationUserRole.USER)
                                 .provider(Provider.LOCAL)
                                 .password("Password@123")
                                 .build();

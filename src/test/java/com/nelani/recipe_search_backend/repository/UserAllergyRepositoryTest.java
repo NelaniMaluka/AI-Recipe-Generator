@@ -4,6 +4,7 @@ import com.nelani.recipe_search_backend.model.Allergy;
 import com.nelani.recipe_search_backend.model.Provider;
 import com.nelani.recipe_search_backend.model.User;
 import com.nelani.recipe_search_backend.model.UserAllergy;
+import com.nelani.recipe_search_backend.security.ApplicationUserRole;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,7 @@ public class UserAllergyRepositoryTest {
                                 .lastname("lastname")
                                 .email("test-email@test.co.za")
                                 .publicId("publicId")
+                                .role(ApplicationUserRole.USER)
                                 .provider(Provider.LOCAL)
                                 .password("Password@123")
                                 .build();

@@ -107,7 +107,7 @@ public class PasswordResetServiceImplTest {
     }
 
     @Test
-    void changePassword_SuccessfulChange_UpdatesPassword() {
+    void changePassword_ChangePassword_UpdatesPassword() {
         // Arrange
         ChangePasswordDto dto = ChangePasswordDto.builder()
                 .oldPassword("encoded-old-password")

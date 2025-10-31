@@ -68,6 +68,30 @@ public class RecipeControllerTest {
         }
 
         @Test
+        public void RecipeController_GetMealTypes_ReturnMealTypeList() throws Exception {
+                // Act
+                ResultActions response = mockMvc.perform(
+                                get("/api/public/recipe/meal-types")
+                                                .contentType(MediaType.APPLICATION_JSON));
+
+                // Assert
+                response.andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()", CoreMatchers.is(MealType.values().length)));
+        }
+
+        @Test
+        public void RecipeController_GetDateFilter_ReturnDateFilterList() throws Exception {
+                // Act
+                ResultActions response = mockMvc.perform(
+                                get("/api/public/recipe/date-filters")
+                                                .contentType(MediaType.APPLICATION_JSON));
+
+                // Assert
+                response.andExpect(status().isOk())
+                                .andExpect(jsonPath("$.length()", CoreMatchers.is(DateFilter.values().length)));
+        }
+
+        @Test
         public void RecipeController_GetRecipe_ReturnsRecipeDto() throws Exception {
                 List<IngredientResponse> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
                 List<StepResponse> stepsList = List.of(createStep("description", 10));
@@ -77,7 +101,7 @@ public class RecipeControllerTest {
                 // Act
                 when(recipeService.getRecipe("publicId")).thenReturn(savedRecipe);
                 ResultActions response = mockMvc.perform(
-                                get("/api/recipe/publicId")
+                                get("/api/public/recipe/publicId")
                                                 .contentType(MediaType.APPLICATION_JSON));
 
                 // Asserts
@@ -93,35 +117,11 @@ public class RecipeControllerTest {
 
                 // Act
                 ResultActions response = mockMvc.perform(
-                                get("/api/recipe/invalid")
+                                get("/api/public/recipe/invalid")
                                                 .contentType(MediaType.APPLICATION_JSON));
 
                 // Asserts
                 response.andExpect(status().isBadRequest());
-        }
-
-        @Test
-        public void RecipeController_GetMealTypes_ReturnMealTypeList() throws Exception {
-                // Act
-                ResultActions response = mockMvc.perform(
-                                get("/api/recipe/meal-types")
-                                                .contentType(MediaType.APPLICATION_JSON));
-
-                // Assert
-                response.andExpect(status().isOk())
-                                .andExpect(jsonPath("$.length()", CoreMatchers.is(MealType.values().length)));
-        }
-
-        @Test
-        public void RecipeController_GetDateFilter_ReturnDateFilterList() throws Exception {
-                // Act
-                ResultActions response = mockMvc.perform(
-                                get("/api/recipe/date-filters")
-                                                .contentType(MediaType.APPLICATION_JSON));
-
-                // Assert
-                response.andExpect(status().isOk())
-                                .andExpect(jsonPath("$.length()", CoreMatchers.is(DateFilter.values().length)));
         }
 
         @Test
@@ -131,7 +131,7 @@ public class RecipeControllerTest {
 
                 // Act
                 ResultActions response = mockMvc.perform(
-                                get("/api/recipe/search")
+                                get("/api/public/recipe/search")
                                                 .param("searchWord", "recipe")
                                                 .param("page", "0")
                                                 .param("size", "5")
@@ -152,7 +152,7 @@ public class RecipeControllerTest {
 
                 // Act
                 ResultActions response = mockMvc.perform(
-                                get("/api/recipe/all-recipes")
+                                get("/api/public/recipes")
                                                 .param("startTime", String.valueOf(0))
                                                 .param("endTime", String.valueOf(180))
                                                 .param("mealType", "APPETIZER")
@@ -169,11 +169,26 @@ public class RecipeControllerTest {
         }
 
         @Test
+        void RecipeController_EmailRecipe_ReturnsMessageResponse() throws Exception {
+                // Arrange
+                doNothing().when(recipeService).emailRecipe(any(String.class), any(String.class));
+
+                // Act
+                mockMvc.perform(post("/api/public/recipe/email-recipe")
+                                .param("email", "test-email@test.co.za")
+                                .param("publicId", "recipe123")
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message")
+                                                .value("Recipe has been successfully sent to test-email@test.co.za"))
+                                .andExpect(jsonPath("$.email").doesNotExist());
+        }
+
+        @Test
         public void RecipeController_UpdateRecipe_ReturnsUpdatedRecipe() throws Exception {
                 // Arrange
                 String publicId = "recipe123";
                 RecipeDto recipeDto = RecipeDto.builder()
-                                .publicId(publicId)
                                 .name("Updated Cake")
                                 .imageUrl("image.jpg")
                                 .mealType(MealType.APPETIZER)
@@ -198,7 +213,7 @@ public class RecipeControllerTest {
                 when(recipeService.updateRecipe(any(String.class), any(RecipeDto.class))).thenReturn(updatedResponse);
 
                 // Act & Assert
-                mockMvc.perform(put("/api/recipe/update-recipe")
+                mockMvc.perform(put("/api/admin/recipe/publicId")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(new ObjectMapper().writeValueAsString(recipeDto)))
                                 .andExpect(status().isOk())
@@ -216,12 +231,10 @@ public class RecipeControllerTest {
                 doNothing().when(recipeService).deleteRecipe(publicId);
 
                 // Act & Assert
-                mockMvc.perform(delete("/api/recipe/delete-recipe")
+                mockMvc.perform(delete("/api/admin/recipe/abc123")
                                 .param("publicId", publicId)
                                 .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isOk())
-                                .andExpect(content().string(
-                                                "Recipe with ID " + publicId + " has been successfully deleted."));
+                                .andExpect(status().isNoContent());
 
                 // Verify that the service was called
                 verify(recipeService).deleteRecipe(publicId);

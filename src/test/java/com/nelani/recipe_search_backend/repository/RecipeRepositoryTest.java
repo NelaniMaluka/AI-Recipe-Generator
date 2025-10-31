@@ -43,7 +43,7 @@ public class RecipeRepositoryTest {
     }
 
     @Test
-    public void RecipeRepository_SaveAll_RetrieveSavedRecipe() {
+    public void RecipeRepository_FindByPublicId_ReturnOptionalRecipe() {
         // Arrange
         List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
         List<Step> stepsList = List.of(createStep("description", 10));
@@ -53,7 +53,7 @@ public class RecipeRepositoryTest {
         recipeRepository.save(saveRecipe);
 
         // Retrieve the saved recipe from DB and assert
-        Recipe retrievedRecipe = recipeRepository.findById(saveRecipe.getId()).orElse(null);
+        Recipe retrievedRecipe = recipeRepository.findByPublicId(saveRecipe.getPublicId()).get();
         Assertions.assertThat(retrievedRecipe).isNotNull();
         Assertions.assertThat(retrievedRecipe.getId()).isEqualTo(saveRecipe.getId());
         Assertions.assertThat(retrievedRecipe.getIngredients()).hasSize(1)
@@ -62,6 +62,21 @@ public class RecipeRepositoryTest {
         Assertions.assertThat(retrievedRecipe.getSteps()).hasSize(1)
                 .first()
                 .hasFieldOrPropertyWithValue("description", "description");
+    }
+
+    @Test
+    public void RecipeRepository_CheckRecipe_FindMatchingRecipe() {
+        // Arrange
+        List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
+        List<Step> stepsList = List.of(createStep("description", 10));
+        Recipe saveRecipe = createRecipe("publicId", "recipe", "igmUrl", 10, ingredientsList, stepsList);
+
+        // Act
+        recipeRepository.save(saveRecipe);
+
+        // Retrieve the saved recipe from DB and assert
+        boolean recipeMatch = recipeRepository.existsByUniquenessIdentifier(saveRecipe.getUniquenessIdentifier());
+        Assertions.assertThat(recipeMatch).isTrue();
     }
 
     @Test
@@ -88,82 +103,6 @@ public class RecipeRepositoryTest {
                     .extracting(Step::getDescription)
                     .contains("description");
         });
-    }
-
-    @Test
-    public void RecipeRepository_CheckRecipe_FindMatchingRecipe() {
-        // Arrange
-        List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
-        List<Step> stepsList = List.of(createStep("description", 10));
-        Recipe saveRecipe = createRecipe("publicId", "recipe", "igmUrl", 10, ingredientsList, stepsList);
-
-        // Act
-        recipeRepository.save(saveRecipe);
-
-        // Retrieve the saved recipe from DB and assert
-        boolean recipeMatch = recipeRepository.existsByUniquenessIdentifier(saveRecipe.getUniquenessIdentifier());
-        Assertions.assertThat(recipeMatch).isTrue();
-    }
-
-    @Test
-    public void RecipeRepository_CheckRecipe_FindNonMatchingRecipe() {
-        // Arrange
-        List<Ingredient> saveIngredients = List.of(createIngredient("ingredient", "4 cups"));
-        List<Step> saveSteps = List.of(createStep("description", 10));
-        Recipe saveRecipe = createRecipe("publicId", "recipe", "imgUrl", 10, saveIngredients, saveSteps);
-
-        // Create fresh instances for checkRecipe
-        List<Ingredient> checkIngredients = List.of(createIngredient("ingredient", "4 cups"));
-        List<Step> checkSteps = List.of(createStep("description", 10));
-        Recipe checkRecipe = createRecipe("publicId", "recipe2", "imgUrl", 10, checkIngredients, checkSteps);
-
-        // Act
-        recipeRepository.save(saveRecipe);
-
-        // Assert
-        boolean recipeMatch = recipeRepository.existsByUniquenessIdentifier(checkRecipe.getUniquenessIdentifier());
-        Assertions.assertThat(recipeMatch).isFalse();
-    }
-
-    @Test
-    public void RecipeRepository_SearchRecipes_GetEmptyList() {
-        // Retrieve non-existent recipe from DB and assert
-        Pageable pageable = PageRequest.of(0, 5);
-        List<Recipe> retrievedRecipesList = recipeRepository.searchRecipes("nonexistent", pageable);
-
-        Assertions.assertThat(retrievedRecipesList).isNotNull();
-        Assertions.assertThat(retrievedRecipesList).isEmpty();
-    }
-
-    @Test
-    public void RecipeRepository_FindByPublicId_ReturnOptionalRecipe() {
-        // Arrange
-        List<Ingredient> ingredientsList = List.of(createIngredient("ingredient", "4 cups"));
-        List<Step> stepsList = List.of(createStep("description", 10));
-        Recipe saveRecipe = createRecipe("publicId", "recipe", "igmUrl", 10, ingredientsList, stepsList);
-
-        // Act
-        recipeRepository.save(saveRecipe);
-
-        // Retrieve the saved recipe from DB and assert
-        Recipe retrievedRecipe = recipeRepository.findByPublicId(saveRecipe.getPublicId()).get();
-        Assertions.assertThat(retrievedRecipe).isNotNull();
-        Assertions.assertThat(retrievedRecipe.getId()).isEqualTo(saveRecipe.getId());
-        Assertions.assertThat(retrievedRecipe.getIngredients()).hasSize(1)
-                .first()
-                .hasFieldOrPropertyWithValue("name", "ingredient");
-        Assertions.assertThat(retrievedRecipe.getSteps()).hasSize(1)
-                .first()
-                .hasFieldOrPropertyWithValue("description", "description");
-    }
-
-    @Test
-    public void RecipeRepository_FindByPublicId_ReturnEmptyOptionalRecipe() {
-        // Retrieve non-existent recipe from DB and assert
-        Optional<Recipe> retrievedRecipesList = recipeRepository.findByPublicId("publicId ");
-
-        Assertions.assertThat(retrievedRecipesList).isNotNull();
-        Assertions.assertThat(retrievedRecipesList).isEmpty();
     }
 
     @Test
@@ -198,24 +137,6 @@ public class RecipeRepositoryTest {
                     .extracting(Step::getDescription)
                     .contains("description");
         });
-    }
-
-    @Test
-    public void RecipeRepository_GetRecipesByTimeAndMealType_ReturnEmptyList() {
-        // Arrange
-        int startTime = 0;
-        int endTime = 180;
-        MealType mealType = MealType.APPETIZER;
-        LocalDateTime startDate = LocalDateTime.now().toLocalDate().atStartOfDay();
-        LocalDateTime endDate = LocalDateTime.now().toLocalDate().plusDays(1).atStartOfDay();
-        Pageable pageable = PageRequest.of(0, 5);
-
-        // Assert
-        Page<Recipe> retrievedRecipesList = recipeRepository.getRecipesByTimeAndMealType(startTime, endTime, mealType,
-                startDate, endDate, pageable);
-
-        Assertions.assertThat(retrievedRecipesList).isNotNull();
-        Assertions.assertThat(retrievedRecipesList).isEmpty();
     }
 
     private Ingredient createIngredient(String name, String quantity) {

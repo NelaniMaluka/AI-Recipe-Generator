@@ -41,12 +41,12 @@ public class AuthenticationControllerTest {
   private UserDetailsService userDetailsService;
 
   @Test
-  public void AuthenticationController_Register_ReturnsString() throws Exception {
+  public void AuthenticationController_Register_ReturnsJson() throws Exception {
     // Arrange
     doNothing().when(authenticationService).signup(any(RegisterUserDto.class));
 
-    // Act
-    var response = mockMvc.perform(post("/api/auth/signup")
+    // Act & Assert
+    mockMvc.perform(post("/api/public/auth/register")
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -55,12 +55,10 @@ public class AuthenticationControllerTest {
               "email": "test-email@test.co.za",
               "password": "Password@123"
             }
-            """));
-
-    // Assert
-    response.andExpect(status().isCreated())
-        .andExpect(content().string(
-            "We have sent a verification email to your account. Please authenticate your email."));
+            """))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.message").value("We have sent a verification email. Please verify your email."))
+        .andExpect(jsonPath("$.email").value("test-email@test.co.za"));
   }
 
   @Test
@@ -80,7 +78,7 @@ public class AuthenticationControllerTest {
     when(authenticationService.login(any(LoginUserDto.class))).thenReturn(loginResponse);
 
     // Act
-    var response = mockMvc.perform(post("/api/auth/login")
+    var response = mockMvc.perform(post("/api/public/auth/login")
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -114,7 +112,7 @@ public class AuthenticationControllerTest {
     when(authenticationService.verifyUser(any(VerifyUserDto.class))).thenReturn(loginResponse);
 
     // Act
-    var response = mockMvc.perform(post("/api/auth/verify")
+    var response = mockMvc.perform(post("/api/public/auth/verify")
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -132,17 +130,16 @@ public class AuthenticationControllerTest {
   }
 
   @Test
-  public void AuthenticationController_ResetVerification_ReturnsString() throws Exception {
+  public void AuthenticationController_ResetVerification_ReturnsJson() throws Exception {
     // Arrange
     doNothing().when(authenticationService).resendVerificationCode(any(String.class));
 
-    // Act
-    var response = mockMvc.perform(post("/api/auth/reset-verification")
-        .param("email", "malukanelani@gmail.com"));
-
-    // Assert
-    response.andExpect(status().isOk())
-        .andExpect(content().string(
-            "Successfully sent a new verification code."));
+    // Act & Assert
+    mockMvc.perform(post("/api/public/auth/resend-verification")
+        .param("email", "malukanelani@gmail.com"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value("Successfully sent a new verification code."))
+        .andExpect(jsonPath("$.email").value("malukanelani@gmail.com"));
   }
+
 }

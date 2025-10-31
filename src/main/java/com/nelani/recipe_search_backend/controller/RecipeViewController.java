@@ -1,12 +1,11 @@
 package com.nelani.recipe_search_backend.controller;
 
-import com.nelani.recipe_search_backend.service.RecipeViewsService;
+import com.nelani.recipe_search_backend.service.RecipeViewService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +16,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 @Tag(name = "User Views", description = "Endpoints for retrieving and recording recipe view counts")
-public class RecipeViewsController {
+public class RecipeViewController {
 
-        private final RecipeViewsService viewsService;
+        private final RecipeViewService viewsService;
 
-        public RecipeViewsController(RecipeViewsService viewsService) {
+        public RecipeViewController(RecipeViewService viewsService) {
                 this.viewsService = viewsService;
         }
 

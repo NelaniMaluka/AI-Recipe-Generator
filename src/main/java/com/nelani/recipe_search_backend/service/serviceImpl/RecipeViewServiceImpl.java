@@ -5,7 +5,7 @@ import com.nelani.recipe_search_backend.model.RecipeView;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
 import com.nelani.recipe_search_backend.repository.RecipeViewRepository;
 import com.nelani.recipe_search_backend.repository.UserRepository;
-import com.nelani.recipe_search_backend.service.RecipeViewsService;
+import com.nelani.recipe_search_backend.service.RecipeViewService;
 import com.nelani.recipe_search_backend.sockets.RecipeSocket;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -17,14 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-public class RecipeViewsServiceImpl implements RecipeViewsService {
+public class RecipeViewServiceImpl implements RecipeViewService {
 
     private final RecipeViewRepository recipeViewRepository;
     private final UserRepository userRepository;
     private final RecipeRepository recipeRepository;
     private final RecipeSocket recipeSocket;
 
-    public RecipeViewsServiceImpl(RecipeViewRepository recipeViewRepository, UserRepository userRepository,
+    public RecipeViewServiceImpl(RecipeViewRepository recipeViewRepository, UserRepository userRepository,
             RecipeRepository recipeRepository, RecipeSocket recipeSocket) {
         this.recipeViewRepository = recipeViewRepository;
         this.userRepository = userRepository;

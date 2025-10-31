@@ -19,9 +19,9 @@ import java.util.UUID;
 public interface RecipeLikeRepository extends JpaRepository<RecipeLike, UUID> {
     long countByRecipe(Recipe recipe);
 
-    Optional<RecipeLike> findByUserAndRecipe(User user, Recipe recipe);
-
     boolean existsByUserAndRecipe(User user, Recipe recipe);
+
+    Optional<RecipeLike> findByUserAndRecipe(User user, Recipe recipe);
 
     @Query("SELECT rl.recipe.publicId FROM RecipeLike rl WHERE rl.user = :user")
     List<String> findRecentLikedRecipeIdsByUser(@Param("user") User user, Pageable pageable);

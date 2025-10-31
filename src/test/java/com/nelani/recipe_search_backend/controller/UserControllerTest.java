@@ -160,11 +160,12 @@ public class UserControllerTest {
                 doNothing().when(userService).changeEmailRequest(newEmail);
 
                 // Act & Assert
-                mockMvc.perform(post("/api/user/update-email-request")
+                mockMvc.perform(post("/api/user/email/request")
                                 .param("newEmail", newEmail)
                                 .contentType(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
-                                .andExpect(content().string("Verification email sent successfully to " + newEmail));
+                                .andExpect(jsonPath("$.message")
+                                                .value("Verification email sent successfully to " + newEmail));
 
                 // Verify service method was called
                 verify(userService, times(1)).changeEmailRequest(newEmail);
@@ -192,7 +193,7 @@ public class UserControllerTest {
                 when(userService.verifyChangeEmailRequest(token)).thenReturn(loginResponse);
 
                 // Act & Assert
-                mockMvc.perform(post("/api/user/verify-email-change")
+                mockMvc.perform(post("/api/user/email/verify")
                                 .param("token", token)
                                 .contentType(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
