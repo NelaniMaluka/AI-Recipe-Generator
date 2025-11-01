@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
@@ -99,11 +100,14 @@ public class UserControllerTest {
                                 .allergies(List.of())
                                 .build();
 
-                Authentication auth = new UsernamePasswordAuthenticationToken(user.getPublicId(), null,
-                                new ArrayList<>());
+                Authentication auth = new UsernamePasswordAuthenticationToken(
+                                user.getPublicId(),
+                                null,
+                                List.of(new SimpleGrantedAuthority("user:write")));
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
-                when(userService.updateUserDetails(dto)).thenReturn(loginResponse);
+                // Mock the service to return the LoginResponse for any UserDto
+                when(userService.updateUserDetails(any(UserDto.class))).thenReturn(loginResponse);
                 doNothing().when(userSocket).sendUpdatedUser(any(UserResponse.class));
 
                 // Act
