@@ -1,7 +1,6 @@
 package com.nelani.recipe_search_backend.controller;
 
 import com.nelani.recipe_search_backend.security.JwtService;
-import com.nelani.recipe_search_backend.service.RecipeLikeService;
 import com.nelani.recipe_search_backend.service.RecipeViewService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +14,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

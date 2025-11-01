@@ -3,14 +3,12 @@ package com.nelani.recipe_search_backend.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nelani.recipe_search_backend.model.MealType;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

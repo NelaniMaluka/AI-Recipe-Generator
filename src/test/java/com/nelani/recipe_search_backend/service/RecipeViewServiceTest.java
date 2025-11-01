@@ -1,12 +1,10 @@
 package com.nelani.recipe_search_backend.service;
 
 import com.nelani.recipe_search_backend.model.*;
-import com.nelani.recipe_search_backend.repository.RecipeLikeRepository;
 import com.nelani.recipe_search_backend.repository.RecipeRepository;
 import com.nelani.recipe_search_backend.repository.RecipeViewRepository;
 import com.nelani.recipe_search_backend.repository.UserRepository;
 import com.nelani.recipe_search_backend.security.ApplicationUserRole;
-import com.nelani.recipe_search_backend.service.serviceImpl.RecipeLikeServiceImpl;
 import com.nelani.recipe_search_backend.service.serviceImpl.RecipeViewServiceImpl;
 import com.nelani.recipe_search_backend.sockets.RecipeSocket;
 import com.nelani.recipe_search_backend.sockets.UserSocket;
@@ -17,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -85,54 +84,59 @@ public class RecipeViewServiceTest {
     }
 
     @Test
-    public void RecipeService_AddView_AddsViewIfNotExists() {
+    void RecipeService_AddView_AddsViewIfNotExists() {
         // Mock authentication
-        var authentication = org.mockito.Mockito.mock(org.springframework.security.core.Authentication.class);
-        when(authentication.isAuthenticated()).thenReturn(true);
+        var authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn("test-email@test.co.za");
 
-        var securityContext = org.mockito.Mockito.mock(org.springframework.security.core.context.SecurityContext.class);
+        var securityContext = mock(org.springframework.security.core.context.SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
 
         // Arrange mocks
         when(recipeRepository.findByPublicId(any(String.class))).thenReturn(Optional.of(recipe));
         when(userRepository.findByEmail(any(String.class))).thenReturn(Optional.of(user));
-        when(recipeViewRepository.findByUserAndRecipe(user, recipe)).thenReturn(Optional.empty());
+        when(recipeViewRepository.findByUserAndRecipe(any(), any())).thenReturn(Optional.empty());
 
         // Act
         recipeViewService.addView(recipe.getPublicId());
 
-        // Verify interactions
-        verify(recipeViewRepository).save(any(RecipeView.class)); // view saved
-        verify(recipeRepository).save(recipe); // recipe updated
-        verify(recipeSocket).sendUpdatedRecipeViews(recipe); // socket called
+        // Assert
+        verify(recipeViewRepository).save(any(RecipeView.class));
+        verify(recipeRepository).save(recipe);
+        verify(recipeSocket).sendUpdatedRecipeViews(recipe);
     }
 
     @Test
     public void RecipeService_AddView_DoesNotSaveDuplicateView() {
         // Mock authentication
-        var authentication = org.mockito.Mockito.mock(org.springframework.security.core.Authentication.class);
-        when(authentication.isAuthenticated()).thenReturn(true);
+        var authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn("test-email@test.co.za");
 
-        var securityContext = org.mockito.Mockito.mock(org.springframework.security.core.context.SecurityContext.class);
+        var securityContext = mock(org.springframework.security.core.context.SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
 
         // Arrange mocks: view already exists
         when(recipeRepository.findByPublicId(any(String.class))).thenReturn(Optional.of(recipe));
         when(userRepository.findByEmail(any(String.class))).thenReturn(Optional.of(user));
+
+        // A Mock view already exists for this user and recipe
+        RecipeView existingView = RecipeView.builder().user(user).recipe(recipe).build();
         when(recipeViewRepository.findByUserAndRecipe(user, recipe))
-                .thenReturn(Optional.of(RecipeView.builder().recipe(recipe).user(user).build()));
+                .thenReturn(Optional.of(existingView));
 
         // Act
         recipeViewService.addView(recipe.getPublicId());
 
-        // Verify that save is NOT called for duplicate view
+        // Verify save is NOT called for duplicate view
         verify(recipeViewRepository, never()).save(any(RecipeView.class));
-        verify(recipeRepository).save(recipe); // recipe updated
-        verify(recipeSocket).sendUpdatedRecipeViews(recipe); // socket called
+
+        // Recipe save should also NOT be called
+        verify(recipeRepository, never()).save(recipe);
+
+        // Socket still called
+        verify(recipeSocket).sendUpdatedRecipeViews(recipe);
     }
 
     private Ingredient createIngredient(String name, String quantity) {
