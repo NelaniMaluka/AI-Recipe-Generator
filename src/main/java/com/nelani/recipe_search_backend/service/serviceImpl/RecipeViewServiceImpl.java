@@ -73,27 +73,23 @@ public class RecipeViewServiceImpl implements RecipeViewService {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // Ensure a valid, logged-in user
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Please login or register");
-        }
-
         // Fetch the authenticated user
         String username = auth.getName();
-        var user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        var user = userRepository.findByEmail(username);
 
         // Record a user view only if it doesn’t already exist
-        if (recipeViewRepository.findByUserAndRecipe(user, recipe).isEmpty()) {
-            recipeViewRepository.save(RecipeView.builder()
-                    .user(user)
-                    .recipe(recipe)
-                    .build());
+        if (user.isPresent()) {
+            if (recipeViewRepository.findByUserAndRecipe(user.get(), recipe).isEmpty()) {
+                recipeViewRepository.save(RecipeView.builder()
+                        .user(user.get())
+                        .recipe(recipe)
+                        .build());
+                recipeRepository.save(recipe);
+            }
         }
 
         // Increment global recipe views
         recipe.setViews(recipe.getViews() + 1);
-        recipeRepository.save(recipe);
 
         recipeSocket.sendUpdatedRecipeViews(recipe);
     }

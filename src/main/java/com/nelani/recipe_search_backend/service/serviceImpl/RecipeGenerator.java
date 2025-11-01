@@ -153,13 +153,16 @@ public class RecipeGenerator {
         List<Recipe> recipes = mapper.readValue(jsonArray, new TypeReference<List<Recipe>>() {
         });
         recipes.forEach(recipe -> {
+            recipe.setViews(0);
             try {
                 recipe.setImageUrl(recipeImageGenerator(recipe.getName()));
             } catch (JsonProcessingException e) {
-                log.error("Failed to generate image for recipe '{}', using fallback image", recipe.getName(), e);
-                // Fallback to placeholder
                 recipe.setImageUrl("https://via.placeholder.com/600x400.png?text=" + recipe.getName());
             }
+
+            // THIS IS CRUCIAL
+            recipe.getIngredients().forEach(ingredient -> ingredient.setRecipe(recipe));
+            recipe.getSteps().forEach(step -> step.setRecipe(recipe));
         });
 
         return recipes;

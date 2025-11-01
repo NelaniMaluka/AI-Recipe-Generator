@@ -1,5 +1,6 @@
 package com.nelani.recipe_search_backend.config;
 
+import com.nelani.recipe_search_backend.repository.UserRepository;
 import com.nelani.recipe_search_backend.security.ApplicationUserRole;
 import com.nelani.recipe_search_backend.security.CustomSuccessHandler;
 import com.nelani.recipe_search_backend.security.JwtAuthenticationFilter;
@@ -14,6 +15,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -59,23 +61,11 @@ public class SecurityConfiguration {
                                                 .successHandler(successHandler)
                                                 .failureUrl("/api/auth/failure"))
                                 .cors(Customizer.withDefaults())
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                                .authenticationProvider(authenticationProvider)
+                        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                        .authenticationProvider(authenticationProvider)
                                 .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
-        }
-
-        @Bean("customUserDetailsService")
-        public UserDetailsService userDetailsService() {
-                UserDetails admin = User.builder()
-                                .username("admin")
-                                .password(passwordEncoder.encode("admin123"))
-                                .authorities(ApplicationUserRole.ADMIN.grantedAuthorities())
-                                .build();
-
-                return new InMemoryUserDetailsManager(admin);
         }
 
 }

@@ -43,7 +43,7 @@ public class RecipeLikeController {
         @Operation(summary = "Add a like to a recipe", description = "Allows an authenticated user to like a specific recipe using its public ID.")
         @ApiResponse(responseCode = "201", description = "Like added successfully", content = @Content(schema = @Schema(example = "{\"message\": \"Like added successfully\", \"publicId\": \"abc123\"}")))
         @PostMapping("/user/recipes/{publicId}/likes")
-        @PreAuthorize("hasAuthority('user:write')")
+        @PreAuthorize("hasAuthority('user:write') and hasAuthority('recipe:read')")
         public ResponseEntity<?> addRecipeLike(
                         @Parameter(description = "Unique public identifier of the recipe", example = "abc123") @PathVariable @NotBlank(message = "Public ID cannot be blank") String publicId,
 
@@ -57,7 +57,7 @@ public class RecipeLikeController {
         @Operation(summary = "Remove a like from a recipe", description = "Allows an authenticated user to remove a like they previously added to a recipe.")
         @ApiResponse(responseCode = "204", description = "Like removed successfully")
         @DeleteMapping("/user/recipes/{publicId}/likes")
-        @PreAuthorize("hasAuthority('user:write')")
+        @PreAuthorize("hasAuthority('user:write') and hasAuthority('recipe:read')")
         public ResponseEntity<?> removeRecipeLike(
                         @Parameter(description = "Unique public identifier of the recipe", example = "abc123") @PathVariable @NotBlank(message = "Public ID cannot be blank") String publicId) {
                 recipeLikeService.removeRecipeLike(publicId);
@@ -76,7 +76,7 @@ public class RecipeLikeController {
         @Operation(summary = "Check if a user has liked a recipe", description = "Checks whether the authenticated user has liked a particular recipe by its public ID.")
         @ApiResponse(responseCode = "200", description = "Returns whether the user liked the recipe", content = @Content(schema = @Schema(example = "{\"liked\": true}")))
         @GetMapping("/user/recipes/{publicId}/liked")
-        @PreAuthorize("hasAuthority('user:read')")
+        @PreAuthorize("hasAuthority('user:write') and hasAuthority('recipe:read')")
         public ResponseEntity<?> userLikedCheck(
                         @Parameter(description = "Unique public identifier of the recipe", example = "abc123") @PathVariable @NotBlank(message = "Public ID cannot be blank") String publicId) {
                 boolean response = recipeLikeService.fallbackUserLikedCheck(publicId);

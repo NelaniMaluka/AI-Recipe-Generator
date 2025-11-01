@@ -7,11 +7,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.context.annotation.Lazy;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -36,45 +37,57 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
 
         logger.info("OAuth authentication successful");
 
-        // Get OAuth user details
-        DefaultOAuth2User oauthUser = (DefaultOAuth2User) authentication.getPrincipal();
-        String provider = authentication.getAuthorities().stream()
-                .findFirst()
-                .map(a -> a.getAuthority())
-                .orElse("google"); // fallback
-        logger.debug("Authentication provider: {}", provider);
+        Object principal = authentication.getPrincipal();
+        String email;
+        String firstName;
+        String lastName;
+        String rawName = "";
+        String provider; // Default
 
-        String email = oauthUser.getAttribute("email");
-        String rawName = oauthUser.getAttribute("name") != null ? oauthUser.getAttribute("name").toString() : "";
-        String firstName = oauthUser.getAttribute("given_name") != null
-                ? oauthUser.getAttribute("given_name").toString()
-                : rawName.split(" ")[0];
-        String lastName = oauthUser.getAttribute("family_name") != null
-                ? oauthUser.getAttribute("family_name").toString()
-                : (rawName.split(" ").length > 1 ? rawName.split(" ")[1] : "");
+        // --- Handle both OIDC and OAuth2 users ---
+        if (principal instanceof OidcUser oidcUser) {
+            email = oidcUser.getEmail();
+            rawName = oidcUser.getFullName();
+            firstName = oidcUser.getGivenName();
+            lastName = oidcUser.getFamilyName();
+            provider = "google";
+        } else if (principal instanceof OAuth2User oauthUser) {
+            email = oauthUser.getAttribute("email");
+            rawName = oauthUser.getAttribute("name");
+            firstName = oauthUser.getAttribute("given_name");
+            lastName = oauthUser.getAttribute("family_name");
+            provider = "google";
+        } else {
+            provider = "google";
+            lastName = "";
+            firstName = "";
+            email = null;
+            logger.error("Unsupported principal type: {}", principal.getClass());
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unsupported OAuth principal type");
+            return;
+        }
 
         logger.debug("OAuth user details - email: {}, firstName: {}, lastName: {}", email, firstName, lastName);
 
-        // Validate email from provider
         if (email == null) {
             logger.error("Email not provided by OAuth provider");
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Email not provided by OAuth provider");
             return;
         }
 
-        // Check if user already exists, else create new user
+        // --- Find or create user ---
         Optional<User> existingUser = userRepository.findByEmail(email);
         User user = existingUser.orElseGet(() -> {
             logger.info("Creating new user for email: {}", email);
             User newUser = User.builder()
                     .email(email)
-                    .firstname(firstName)
-                    .lastname(lastName)
+                    .firstname(firstName != null ? firstName : "")
+                    .lastname(lastName != null ? lastName : "")
                     .provider(providerFromString(provider))
                     .enabled(true)
                     .build();
 
-            // Generate unique publicId for the user
+            // Generate the publicId for the user
             String publicId;
             do {
                 int randomNumber = ThreadLocalRandom.current().nextInt(10000000, 100000000);
@@ -89,12 +102,13 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
 
         logger.info("User login completed for: {}", user.getEmail());
 
-        // Generate JWT token
+        // --- Generate JWT token ---
         String token = jwtService.generateToken(user);
         logger.debug("JWT token generated for user: {}", user.getEmail());
 
-        // Return token as JSON
+        // --- Send token as JSON response ---
         response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         response.getWriter().write("{\"token\":\"" + token + "\"}");
         response.getWriter().flush();
 
