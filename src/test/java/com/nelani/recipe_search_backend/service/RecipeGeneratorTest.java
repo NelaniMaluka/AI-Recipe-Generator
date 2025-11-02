@@ -72,6 +72,8 @@ public class RecipeGeneratorTest {
                 .imageUrl(imgUrl)
                 .mealType(MealType.APPETIZER)
                 .cookTimeMinutes(cookTimeMinutes)
+                .ingredients(new ArrayList<>())
+                .steps(new ArrayList<>())
                 .build();
     }
 
