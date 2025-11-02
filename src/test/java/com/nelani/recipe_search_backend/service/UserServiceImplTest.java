@@ -98,8 +98,8 @@ public class UserServiceImplTest {
 
         // Assert
         Assertions.assertThat(response).isNotNull();
-        Assertions.assertThat(response.getFirstname()).isEqualTo(user.getFirstname());
-        Assertions.assertThat(response.getEmail()).isEqualTo(user.getEmail());
+        Assertions.assertThat(response.firstname()).isEqualTo(user.getFirstname());
+        Assertions.assertThat(response.email()).isEqualTo(user.getEmail());
     }
 
     @Test
@@ -125,9 +125,9 @@ public class UserServiceImplTest {
 
         // Assert
         Assertions.assertThat(response).isNotNull();
-        Assertions.assertThat(response.getToken()).isEqualTo("token");
-        Assertions.assertThat(response.getUser().getFirstname()).isEqualTo(user.getFirstname());
-        Assertions.assertThat(response.getUser().getEmail()).isEqualTo(user.getEmail());
+        Assertions.assertThat(response.token()).isEqualTo("token");
+        Assertions.assertThat(response.user().firstname()).isEqualTo(user.getFirstname());
+        Assertions.assertThat(response.user().email()).isEqualTo(user.getEmail());
     }
 
     @Test
@@ -203,11 +203,11 @@ public class UserServiceImplTest {
         verify(emailVerificationRepository, times(1)).delete(emailVerification);
 
         // Assert: token is generated
-        assertEquals("new-token", response.getToken());
-        assertEquals(86400000, response.getExpiresIn());
+        assertEquals("new-token", response.token());
+        assertEquals(86400000, response.expiresIn());
 
         // Assert: Socket broadcast triggered
-        verify(userSocket, times(1)).sendUpdatedUser(response.getUser());
+        verify(userSocket, times(1)).sendUpdatedUser(response.user());
     }
 
 }

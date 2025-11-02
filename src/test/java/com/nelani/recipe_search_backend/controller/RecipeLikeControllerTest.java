@@ -59,7 +59,7 @@ public class RecipeLikeControllerTest {
     void RecipeController_AddRecipeLike_ReturnsCreated() throws Exception {
         // Arrange
         String publicId = "abc123";
-        LikeResponse likeResponse = new LikeResponse(); // optional, mock if needed
+        LikeResponse likeResponse = LikeResponse.builder().build();
         when(recipeLikeService.addRecipeLike(publicId, 0, 500)).thenReturn(likeResponse);
 
         // Act & Assert

@@ -18,7 +18,7 @@ public class UserSocket {
 
     /** Sends real-time updates when a user's profile or details are updated. */
     public void sendUpdatedUser(UserResponse userResponse) {
-        messagingTemplate.convertAndSend("/topic/users/" + userResponse.getPublicId() + "/update", userResponse);
+        messagingTemplate.convertAndSend("/topic/users/" + userResponse.publicId() + "/update", userResponse);
     }
 
     /** Sends live updates for a user's liked recipes. */

@@ -3,22 +3,13 @@ package com.nelani.recipe_search_backend.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 @Builder
-public class ChangePasswordDto {
-    @NotBlank(message = "New password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
-    private String oldPassword;
+public record ChangePasswordDto(
 
-    @NotBlank(message = "New password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
-    private String newPassword;
+                @NotBlank(message = "Old password is required") @Size(min = 8, message = "Password must be at least 8 characters") String oldPassword,
 
-    @NotBlank(message = "Repeat password is required")
-    private String repeatPassword;
+                @NotBlank(message = "New password is required") @Size(min = 8, message = "Password must be at least 8 characters") String newPassword,
+
+                @NotBlank(message = "Repeat password is required") String repeatPassword) {
 }

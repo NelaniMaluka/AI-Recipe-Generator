@@ -5,27 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 @Builder
-public class PasswordResetDto {
+public record PasswordResetDto(
 
-    @NotBlank(message = "Token must not be blank")
-    @Pattern(regexp = "\\d{6,7}", message = "Token must be a 6 or 7-digit number")
-    private String token;
+                @NotBlank(message = "Token must not be blank") @Pattern(regexp = "\\d{6,7}", message = "Token must be a 6 or 7-digit number") String token,
 
-    @Email(message = "Must be a valid email")
-    @NotBlank(message = "Email is required")
-    private String email;
+                @Email(message = "Must be a valid email") @NotBlank(message = "Email is required") String email,
 
-    @NotBlank(message = "New password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
-    private String newPassword;
+                @NotBlank(message = "New password is required") @Size(min = 8, message = "Password must be at least 8 characters") String newPassword,
 
-    @NotBlank(message = "Repeat password is required")
-    private String repeatPassword;
+                @NotBlank(message = "Repeat password is required") String repeatPassword) {
 }

@@ -59,7 +59,7 @@ public class UserControllerTest {
                                 .allergies(new ArrayList<>())
                                 .build();
 
-                Authentication auth = new UsernamePasswordAuthenticationToken(user.getPublicId(), null,
+                Authentication auth = new UsernamePasswordAuthenticationToken(user.publicId(), null,
                                 new ArrayList<>());
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
@@ -71,10 +71,10 @@ public class UserControllerTest {
 
                 // Assert
                 response.andExpect(status().isOk())
-                                .andExpect(jsonPath("$.publicId").value(user.getPublicId()))
-                                .andExpect(jsonPath("$.email").value(user.getEmail()))
-                                .andExpect(jsonPath("$.firstname").value(user.getFirstname()))
-                                .andExpect(jsonPath("$.lastname").value(user.getLastname()));
+                                .andExpect(jsonPath("$.publicId").value(user.publicId()))
+                                .andExpect(jsonPath("$.email").value(user.email()))
+                                .andExpect(jsonPath("$.firstname").value(user.firstname()))
+                                .andExpect(jsonPath("$.lastname").value(user.lastname()));
         }
 
         @Test
@@ -101,7 +101,7 @@ public class UserControllerTest {
                                 .build();
 
                 Authentication auth = new UsernamePasswordAuthenticationToken(
-                                user.getPublicId(),
+                                user.publicId(),
                                 null,
                                 List.of(new SimpleGrantedAuthority("user:write")));
                 SecurityContextHolder.getContext().setAuthentication(auth);
@@ -123,12 +123,12 @@ public class UserControllerTest {
 
                 // Assert
                 response.andExpect(status().isOk())
-                                .andExpect(jsonPath("$.token").value(loginResponse.getToken()))
-                                .andExpect(jsonPath("$.expiresIn").value(loginResponse.getExpiresIn()))
-                                .andExpect(jsonPath("$.user.publicId").value(user.getPublicId()))
-                                .andExpect(jsonPath("$.user.email").value(user.getEmail()))
-                                .andExpect(jsonPath("$.user.firstname").value(user.getFirstname()))
-                                .andExpect(jsonPath("$.user.lastname").value(user.getLastname()));
+                                .andExpect(jsonPath("$.token").value(loginResponse.token()))
+                                .andExpect(jsonPath("$.expiresIn").value(loginResponse.expiresIn()))
+                                .andExpect(jsonPath("$.user.publicId").value(user.publicId()))
+                                .andExpect(jsonPath("$.user.email").value(user.email()))
+                                .andExpect(jsonPath("$.user.firstname").value(user.firstname()))
+                                .andExpect(jsonPath("$.user.lastname").value(user.lastname()));
         }
 
         @Test
@@ -142,7 +142,7 @@ public class UserControllerTest {
                                 .allergies(new ArrayList<>())
                                 .build();
 
-                Authentication auth = new UsernamePasswordAuthenticationToken(user.getPublicId(), null,
+                Authentication auth = new UsernamePasswordAuthenticationToken(user.publicId(), null,
                                 new ArrayList<>());
                 SecurityContextHolder.getContext().setAuthentication(auth);
 

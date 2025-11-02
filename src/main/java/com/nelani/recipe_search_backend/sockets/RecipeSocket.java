@@ -30,7 +30,7 @@ public class RecipeSocket {
 
     /** Broadcasts a recipe update event to subscribers of the specific recipe. */
     public void sendUpdatedRecipe(RecipeResponse recipe) {
-        messagingTemplate.convertAndSend("/topic/recipes/" + recipe.getPublicId() + "/update", recipe);
+        messagingTemplate.convertAndSend("/topic/recipes/" + recipe.publicId() + "/update", recipe);
     }
 
     /** Sends live view count updates for a specific recipe. */

@@ -114,10 +114,10 @@ public class RecipeLikeServiceTest {
                 var response = recipeLikeService.addRecipeLike(recipe.getPublicId(), 0, 500);
 
                 // Assert
-                Assertions.assertThat(response.getMessage()).isEqualTo("Like added successfully");
-                Assertions.assertThat(response.getPublicId()).isEqualTo(recipe.getPublicId());
-                Assertions.assertThat(response.getLikeCount()).isEqualTo(1);
-                Assertions.assertThat(response.getLikedRecipes()).containsExactly(recipe.getPublicId());
+                Assertions.assertThat(response.message()).isEqualTo("Like added successfully");
+                Assertions.assertThat(response.publicId()).isEqualTo(recipe.getPublicId());
+                Assertions.assertThat(response.likeCount()).isEqualTo(1);
+                Assertions.assertThat(response.likedRecipes()).containsExactly(recipe.getPublicId());
         }
 
         @Test

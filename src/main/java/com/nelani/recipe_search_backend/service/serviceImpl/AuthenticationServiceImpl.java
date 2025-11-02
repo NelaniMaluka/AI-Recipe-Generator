@@ -70,17 +70,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Transactional
     public void signup(RegisterUserDto userDto) {
         // Check if a user exists with the provided email
-        Optional<User> optionalUser = userRepository.findByEmail(userDto.getEmail());
+        Optional<User> optionalUser = userRepository.findByEmail(userDto.email());
         if (optionalUser.isPresent()) {
             throw new IllegalArgumentException("A user already exists with this email.");
         }
 
         // Create a new user object
         User user = User.builder()
-                .firstname(userDto.getFirstname())
-                .lastname(userDto.getLastname())
-                .email(userDto.getEmail())
-                .password(passwordEncoder.encode(userDto.getPassword()))
+                .firstname(userDto.firstname())
+                .lastname(userDto.lastname())
+                .email(userDto.email())
+                .password(passwordEncoder.encode(userDto.password()))
                 .provider(Provider.LOCAL)
                 .role(ApplicationUserRole.USER)
                 .build();
@@ -124,7 +124,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Transactional
     public LoginResponse login(LoginUserDto loginUserDto) {
         // Check if a user exists with the provided email
-        var user = userRepository.findByEmail(loginUserDto.getEmail())
+        var user = userRepository.findByEmail(loginUserDto.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         // checks if the account is verified
@@ -141,8 +141,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // Authenticates the user
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        loginUserDto.getEmail(),
-                        loginUserDto.getPassword()));
+                        loginUserDto.email(),
+                        loginUserDto.password()));
 
         // Retrieve all allergy associations for the given user
         var allergyList = userAllergyRepository.findByUser(user);
@@ -169,12 +169,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public LoginResponse verifyUser(VerifyUserDto verifyUserDto) {
         // Check if a user exists with the provided email
         var user = userRepository
-                .findByEmail(verifyUserDto.getEmail())
+                .findByEmail(verifyUserDto.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         // Check if token exists
         var verification = userVerificationRepository
-                .findByUserAndToken(user, verifyUserDto.getToken())
+                .findByUserAndToken(user, verifyUserDto.token())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Verification failed: the token provided does not exist or is invalid."));
 

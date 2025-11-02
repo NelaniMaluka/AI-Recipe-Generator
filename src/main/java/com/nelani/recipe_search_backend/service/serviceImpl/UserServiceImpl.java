@@ -127,8 +127,8 @@ public class UserServiceImpl implements UserService {
                 });
 
         log.debug("Updating firstname and lastname for user '{}'", email);
-        user.setFirstname(userDto.getFirstname());
-        user.setLastname(userDto.getLastname());
+        user.setFirstname(userDto.firstname());
+        user.setLastname(userDto.lastname());
 
         log.debug("Saving allergies for user '{}'", email);
         saveAllergies(user, userDto);
@@ -140,12 +140,13 @@ public class UserServiceImpl implements UserService {
         var allergyList = userAllergyRepository.findByUser(user);
 
         // Generate a new user response
-        LoginResponse response = new LoginResponse();
-        response.setToken(jwtService.generateToken(user));
-        response.setExpiresIn(86400000);
-        response.setUser(UserMapper.mapUserWithAllDetails(user, allergyList));
+        LoginResponse response = LoginResponse.builder()
+                .token(jwtService.generateToken(user))
+                .expiresIn(86400000)
+                .user(UserMapper.mapUserWithAllDetails(user, allergyList))
+                .build();
 
-        userSocket.sendUpdatedUser(response.getUser());
+        userSocket.sendUpdatedUser(response.user());
         log.info("Updated user '{}' broadcasted through WebSocket", email);
 
         return response;
@@ -344,26 +345,27 @@ public class UserServiceImpl implements UserService {
         var allergyList = userAllergyRepository.findByUser(user);
 
         // Generate a new user response
-        LoginResponse response = new LoginResponse();
-        response.setToken(jwtService.generateToken(user));
-        response.setExpiresIn(86400000);
-        response.setUser(UserMapper.mapUserWithAllDetails(user, allergyList));
+        LoginResponse response = LoginResponse.builder()
+                .token(jwtService.generateToken(user))
+                .expiresIn(86400000)
+                .user(UserMapper.mapUserWithAllDetails(user, allergyList))
+                .build();
 
-        userSocket.sendUpdatedUser(response.getUser());
+        userSocket.sendUpdatedUser(response.user());
         log.info("Updated user '{}' broadcasted through WebSocket", currentEmail);
 
         return response;
     }
 
     private void saveAllergies(User user, UserDto userDto) {
-        if (userDto.getAllergies() == null || userDto.getAllergies().isEmpty()) {
+        if (userDto.allergies() == null || userDto.allergies().isEmpty()) {
             log.debug("No allergies provided for user '{}', skipping allergy update", user.getUsername());
             return;
         }
 
-        log.info("Processing {} allergy(ies) for user '{}'", userDto.getAllergies().size(), user.getUsername());
+        log.info("Processing {} allergy(ies) for user '{}'", userDto.allergies().size(), user.getUsername());
 
-        for (String allergyName : userDto.getAllergies()) {
+        for (String allergyName : userDto.allergies()) {
             // Normalize allergy name
             allergyName = allergyName.trim().toLowerCase();
             if (allergyName.isEmpty()) {

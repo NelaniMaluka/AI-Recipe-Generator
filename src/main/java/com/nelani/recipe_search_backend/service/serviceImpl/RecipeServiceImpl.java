@@ -14,6 +14,7 @@ import com.nelani.recipe_search_backend.sockets.RecipeSocket;
 import com.nelani.recipe_search_backend.util.DateRangeUtil;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -162,7 +163,10 @@ public class RecipeServiceImpl implements RecipeService {
          * @return the updated {@link RecipeResponse}
          * @throws IllegalArgumentException if the recipe does not exist
          */
-        @CacheEvict(value = "recipe", key = "#publicId")
+        @Caching(evict = {
+                        @CacheEvict(value = "recipe", key = "#publicId"),
+                        @CacheEvict(value = "recipes", allEntries = true)
+        })
         @Override
         @Transactional
         public RecipeResponse updateRecipe(String publicId, RecipeDto dto) {
@@ -172,24 +176,24 @@ public class RecipeServiceImpl implements RecipeService {
                                                 HttpStatus.NOT_FOUND, "Recipe not found with ID: " + publicId));
 
                 // Update basic fields
-                recipe.setName(dto.getName());
-                recipe.setImageUrl(dto.getImageUrl());
-                recipe.setMealType(dto.getMealType());
-                recipe.setCookTimeMinutes(dto.getCookTimeMinutes());
+                recipe.setName(dto.name());
+                recipe.setImageUrl(dto.imageUrl());
+                recipe.setMealType(dto.mealType());
+                recipe.setCookTimeMinutes(dto.cookTimeMinutes());
 
                 // Map ingredients and steps
-                recipe.setIngredients(dto.getIngredients().stream()
+                recipe.setIngredients(dto.ingredients().stream()
                                 .map(i -> Ingredient.builder()
-                                                .name(i.getName())
-                                                .quantity(i.getQuantity())
+                                                .name(i.name())
+                                                .quantity(i.quantity())
                                                 .recipe(recipe)
                                                 .build())
                                 .toList());
 
-                recipe.setSteps(dto.getSteps().stream()
+                recipe.setSteps(dto.steps().stream()
                                 .map(s -> Step.builder()
-                                                .description(s.getDescription())
-                                                .estimatedMinutes(s.getEstimatedMinutes())
+                                                .description(s.description())
+                                                .estimatedMinutes(s.estimatedMinutes())
                                                 .recipe(recipe)
                                                 .build())
                                 .toList());
@@ -214,7 +218,10 @@ public class RecipeServiceImpl implements RecipeService {
          */
         @Override
         @Transactional
-        @CacheEvict(value = "recipe", key = "#publicId")
+        @Caching(evict = {
+                        @CacheEvict(value = "recipe", key = "#publicId"),
+                        @CacheEvict(value = "recipes", allEntries = true)
+        })
         public void deleteRecipe(String publicId) {
                 // Fetch the recipe or throw exception if not found
                 Recipe recipe = recipeRepository.findByPublicId(publicId)

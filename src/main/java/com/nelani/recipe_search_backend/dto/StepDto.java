@@ -2,19 +2,12 @@ package com.nelani.recipe_search_backend.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
+import lombok.Builder;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
-public class StepDto {
+public record StepDto(
 
-    @NotBlank(message = "Step description cannot be blank")
-    private String description;
+                @NotBlank(message = "Step description cannot be blank") String description,
 
-    @Min(value = 1, message = "Estimated minutes must be at least 1")
-    private int estimatedMinutes;
-
+                @Min(value = 1, message = "Estimated minutes must be at least 1") int estimatedMinutes) {
 }

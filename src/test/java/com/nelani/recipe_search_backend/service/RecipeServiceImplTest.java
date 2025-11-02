@@ -89,7 +89,7 @@ public class RecipeServiceImplTest {
                 // Asserts
                 RecipeResponse retrievedRecipe = recipeService.getRecipe("publicId");
                 Assertions.assertThat(retrievedRecipe).isNotNull();
-                Assertions.assertThat(retrievedRecipe.getName()).isEqualTo("recipe0");
+                Assertions.assertThat(retrievedRecipe.name()).isEqualTo("recipe0");
         }
 
         @Test
@@ -114,7 +114,7 @@ public class RecipeServiceImplTest {
                 Assertions.assertThat(retrievedRecipeResponseList).isNotNull();
                 Assertions.assertThat(retrievedRecipeResponseList)
                                 .hasSize(5)
-                                .extracting(RecipeResponse::getName)
+                                .extracting(RecipeResponse::name)
                                 .contains("recipe0", "recipe1", "recipe2", "recipe3", "recipe4");
         }
 
@@ -172,7 +172,7 @@ public class RecipeServiceImplTest {
                 Assertions.assertThat(retrievedRecipesList).isNotNull();
                 Assertions.assertThat(retrievedRecipesList)
                                 .hasSize(5)
-                                .extracting(RecipeResponse::getName)
+                                .extracting(RecipeResponse::name)
                                 .contains("recipe0", "recipe1", "recipe2", "recipe3", "recipe4");
         }
 
@@ -248,11 +248,11 @@ public class RecipeServiceImplTest {
 
                 // Assert
                 Assertions.assertThat(response).isNotNull();
-                Assertions.assertThat(response.getName()).isEqualTo("Cake");
-                Assertions.assertThat(response.getMealType()).isEqualTo(MealType.APPETIZER);
-                Assertions.assertThat(response.getIngredients()).hasSize(1)
+                Assertions.assertThat(response.name()).isEqualTo("Cake");
+                Assertions.assertThat(response.mealType()).isEqualTo(MealType.APPETIZER);
+                Assertions.assertThat(response.ingredients()).hasSize(1)
                                 .extracting("name").containsExactly("Sugar");
-                Assertions.assertThat(response.getSteps()).hasSize(1)
+                Assertions.assertThat(response.steps()).hasSize(1)
                                 .extracting("description").containsExactly("Mix ingredients");
 
                 // Verify repository save called

@@ -93,7 +93,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public void resetPassword(PasswordResetDto passwordResetDto) {
-        String email = passwordResetDto.getEmail();
+        String email = passwordResetDto.email();
         log.info("Starting password reset process for email: {}", email);
 
         // Retrieve user
@@ -104,7 +104,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 });
 
         // Retrieve and validate token
-        var passwordReset = passwordResetRepository.findByUserAndToken(user, passwordResetDto.getToken())
+        var passwordReset = passwordResetRepository.findByUserAndToken(user, passwordResetDto.token())
                 .orElseThrow(() -> {
                     log.warn("Invalid or missing token for user with email: {}", email);
                     return new ResponseStatusException(
@@ -116,12 +116,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password reset token has expired.");
         }
 
-        if (!passwordResetDto.getNewPassword().equals(passwordResetDto.getRepeatPassword())) {
+        if (!passwordResetDto.newPassword().equals(passwordResetDto.repeatPassword())) {
             log.warn("Password mismatch during reset for email: {}", email);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match.");
         }
 
-        if (passwordEncoder.matches(passwordResetDto.getNewPassword(), user.getPassword())) {
+        if (passwordEncoder.matches(passwordResetDto.newPassword(), user.getPassword())) {
             log.warn("User attempted to reuse old password during reset: {}", email);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "New password cannot be the same as the old password.");
@@ -129,7 +129,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         // Update password and mark token as used
         passwordResetRepository.delete(passwordReset);
-        user.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
+        user.setPassword(passwordEncoder.encode(passwordResetDto.newPassword()));
         userRepository.save(user);
 
         log.info("Password reset successful for email: {}", email);
@@ -169,21 +169,27 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                     return new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
                 });
 
-        // Ensure the provided passwords match
-        if (!changePasswordDto.getNewPassword().equals(changePasswordDto.getRepeatPassword())) {
+        // Ensure the old password matches the current password
+        if (!passwordEncoder.matches(changePasswordDto.oldPassword(), user.getPassword())) {
+            log.warn("Password change failed for user '{}': old password does not match.", email);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Old password is incorrect.");
+        }
+
+        // Ensure the new password and repeat password match
+        if (!changePasswordDto.newPassword().equals(changePasswordDto.repeatPassword())) {
             log.warn("Password change failed for user '{}': provided passwords do not match.", email);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match.");
         }
 
         // Ensure the new password is different from the current one
-        if (passwordEncoder.matches(changePasswordDto.getNewPassword(), user.getPassword())) {
+        if (passwordEncoder.matches(changePasswordDto.newPassword(), user.getPassword())) {
             log.warn("Password change failed for user '{}': new password matches the old password.", email);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "New password cannot be the same as the old password.");
         }
 
         // Update password and save user
-        user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
+        user.setPassword(passwordEncoder.encode(changePasswordDto.newPassword()));
         userRepository.save(user);
         log.info("Password successfully changed for user '{}'.", email);
     }

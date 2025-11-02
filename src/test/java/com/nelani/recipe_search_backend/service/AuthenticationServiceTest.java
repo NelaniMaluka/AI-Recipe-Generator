@@ -76,15 +76,16 @@ public class AuthenticationServiceTest {
         @Test
         public void UserService_Signup_SendEmail() {
                 // Arrange
-                RegisterUserDto dto = new RegisterUserDto();
-                dto.setFirstname("firstname");
-                dto.setLastname("lastname");
-                dto.setEmail("test-email@test.co.za");
-                dto.setPassword("password123");
+                RegisterUserDto dto = RegisterUserDto.builder()
+                                .firstname("firstname")
+                                .lastname("lastname")
+                                .email("test-email@test.co.za")
+                                .password("password123")
+                                .build();
 
-                when(userRepository.findByEmail(dto.getEmail()))
+                when(userRepository.findByEmail(dto.email()))
                                 .thenReturn(Optional.empty());
-                when(passwordEncoder.encode(dto.getPassword()))
+                when(passwordEncoder.encode(dto.password()))
                                 .thenReturn("encodedPassword");
 
                 // Act
@@ -104,7 +105,7 @@ public class AuthenticationServiceTest {
                                 .build();
 
                 user.setEnabled(true);
-                when(userRepository.findByEmail(dto.getEmail()))
+                when(userRepository.findByEmail(dto.email()))
                                 .thenReturn(Optional.of(user));
                 when(jwtService.generateToken(user))
                                 .thenReturn("token");
@@ -112,17 +113,17 @@ public class AuthenticationServiceTest {
                 Authentication authenticationMock = mock(Authentication.class);
 
                 when(authenticationManager.authenticate(
-                                argThat(token -> token.getPrincipal().equals(dto.getEmail()) &&
-                                                token.getCredentials().equals(dto.getPassword()))))
+                                argThat(token -> token.getPrincipal().equals(dto.email()) &&
+                                                token.getCredentials().equals(dto.password()))))
                                 .thenReturn(authenticationMock);
 
                 var response = authService.login(dto);
 
                 // Assert
-                Assertions.assertThat(response.getToken()).isEqualTo("token");
-                Assertions.assertThat(response.getUser().getEmail()).isEqualTo("test-email@test.co.za");
-                Assertions.assertThat(response.getUser().getFirstname()).isEqualTo("firstname");
-                Assertions.assertThat(response.getUser().getLastname()).isEqualTo("lastname");
+                Assertions.assertThat(response.token()).isEqualTo("token");
+                Assertions.assertThat(response.user().email()).isEqualTo("test-email@test.co.za");
+                Assertions.assertThat(response.user().firstname()).isEqualTo("firstname");
+                Assertions.assertThat(response.user().lastname()).isEqualTo("lastname");
         }
 
         @Test
@@ -141,9 +142,9 @@ public class AuthenticationServiceTest {
                                 .build();
 
                 user.setEnabled(true);
-                when(userRepository.findByEmail(dto.getEmail()))
+                when(userRepository.findByEmail(dto.email()))
                                 .thenReturn(Optional.of(user));
-                when(userVerificationRepository.findByUserAndToken(user, dto.getToken()))
+                when(userVerificationRepository.findByUserAndToken(user, dto.token()))
                                 .thenReturn(Optional.of(userVerification));
                 when(jwtService.generateToken(user))
                                 .thenReturn("token");
@@ -151,10 +152,10 @@ public class AuthenticationServiceTest {
                 var response = authService.verifyUser(dto);
 
                 // Assert
-                Assertions.assertThat(response.getToken()).isEqualTo("token");
-                Assertions.assertThat(response.getUser().getEmail()).isEqualTo("test-email@test.co.za");
-                Assertions.assertThat(response.getUser().getFirstname()).isEqualTo("firstname");
-                Assertions.assertThat(response.getUser().getLastname()).isEqualTo("lastname");
+                Assertions.assertThat(response.token()).isEqualTo("token");
+                Assertions.assertThat(response.user().email()).isEqualTo("test-email@test.co.za");
+                Assertions.assertThat(response.user().firstname()).isEqualTo("firstname");
+                Assertions.assertThat(response.user().lastname()).isEqualTo("lastname");
         }
 
         @Test

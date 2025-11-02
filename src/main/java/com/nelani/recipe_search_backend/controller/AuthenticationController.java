@@ -37,7 +37,7 @@ public class AuthenticationController {
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(new MessageResponse(
                                                 "We have sent a verification email. Please verify your email.",
-                                                registerUserDto.getEmail()));
+                                                registerUserDto.email()));
         }
 
         @Operation(summary = "Authenticate user and generate token", description = "Validates the provided credentials and returns a JWT token upon successful login.")

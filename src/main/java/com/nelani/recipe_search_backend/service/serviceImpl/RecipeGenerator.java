@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import jakarta.validation.ConstraintViolationException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,17 +69,23 @@ public class RecipeGenerator {
         List<Recipe> savedRecipes = new ArrayList<>();
         // Try saving each recipe individually
         recipes.forEach(recipe -> {
-            try {
-                // Attempt to insert recipe into DB
-                boolean exists = recipeRepository.existsByUniquenessIdentifier(recipe.getUniquenessIdentifier());
-
-                if (!exists) {
-                    saveRecipe(recipe);
-                    savedRecipes.add(recipe);
+            // Ensure minimum 1 minute per step
+            recipe.getSteps().forEach(step -> {
+                if (step.getEstimatedMinutes() < 1) {
+                    step.setEstimatedMinutes(1);
                 }
+                step.setRecipe(recipe);
+            });
+
+            try {
+                saveRecipe(recipe); // each recipe in its own REQUIRES_NEW transaction
+                savedRecipes.add(recipe);
             } catch (DataIntegrityViolationException e) {
-                // Skip duplicates (unique constraints like recipe name, etc.)
                 log.debug("Recipe '{}' already exists, skipping.", recipe.getName());
+            } catch (ConstraintViolationException e) {
+                log.warn("Recipe '{}' failed validation, skipping. Reason: {}", recipe.getName(), e.getMessage());
+            } catch (Exception e) {
+                log.error("Unexpected error saving recipe '{}', skipping", recipe.getName(), e);
             }
         });
 

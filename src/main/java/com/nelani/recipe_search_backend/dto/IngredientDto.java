@@ -1,19 +1,12 @@
 package com.nelani.recipe_search_backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
+import lombok.Builder;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
-public class IngredientDto {
+public record IngredientDto(
 
-    @NotBlank(message = "Ingredient name cannot be blank")
-    private String name;
+                @NotBlank(message = "Ingredient name cannot be blank") String name,
 
-    @NotBlank(message = "Quantity cannot be blank")
-    private String quantity;
-
+                @NotBlank(message = "Quantity cannot be blank") String quantity) {
 }
