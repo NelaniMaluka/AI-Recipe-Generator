@@ -28,15 +28,12 @@ public class SecurityConfiguration {
         private final AuthenticationProvider authenticationProvider;
         private final JwtAuthenticationFilter authenticationFilter;
         private final CustomSuccessHandler successHandler;
-        private final PasswordEncoder passwordEncoder;
 
         public SecurityConfiguration(AuthenticationProvider authenticationProvider,
-                        JwtAuthenticationFilter authenticationFilter, CustomSuccessHandler successHandler,
-                        PasswordEncoder passwordEncoder) {
+                        JwtAuthenticationFilter authenticationFilter, CustomSuccessHandler successHandler) {
                 this.authenticationProvider = authenticationProvider;
                 this.authenticationFilter = authenticationFilter;
                 this.successHandler = successHandler;
-                this.passwordEncoder = passwordEncoder;
         }
 
         @Bean

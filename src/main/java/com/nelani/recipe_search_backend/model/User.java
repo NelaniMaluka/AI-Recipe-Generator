@@ -53,9 +53,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean enabled = false;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ApplicationUserRole role;
+    private ApplicationUserRole role = ApplicationUserRole.USER;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

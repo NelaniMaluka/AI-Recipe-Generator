@@ -18,7 +18,6 @@ public class OAuthInfoController {
     @GetMapping("/public/auth/oauth/providers")
     public ResponseEntity<?> getOAuthProviders() {
         return ResponseEntity.ok(Map.of(
-                "google", "https://ai-recipe-generator-5rbk.onrender.com/oauth2/authorization/google",
-                "github", "https://ai-recipe-generator-5rbk.onrender.com/oauth2/authorization/github"));
+                "google", "https://ai-recipe-generator-5rbk.onrender.com/oauth2/authorization/google"));
     }
 }
