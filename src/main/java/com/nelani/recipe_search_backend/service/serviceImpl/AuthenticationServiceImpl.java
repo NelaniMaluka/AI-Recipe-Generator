@@ -81,7 +81,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .lastname(userDto.lastname())
                 .email(userDto.email())
                 .password(passwordEncoder.encode(userDto.password()))
-                .provider(Provider.LOCAL)
                 .build();
 
         // Generate the publicId for the user

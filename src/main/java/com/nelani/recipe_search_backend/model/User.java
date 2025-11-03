@@ -44,10 +44,12 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(nullable = true)
     private String password;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Provider provider;
+    private Provider provider = Provider.LOCAL;
 
     @Builder.Default
     @Column(nullable = false)
