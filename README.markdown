@@ -2,6 +2,8 @@
 
 This is the backend service for the AI Recipe Generator. It provides APIs for generating, storing, and sharing recipes, powered by AI models from Hugging Face and external image-generation services.
 
+[API Documentation](https://ai-recipe-generator-5rbk.onrender.com/swagger-ui/index.html)
+
 ## Features
 
 - **AI-powered recipe generation**
